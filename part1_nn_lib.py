@@ -288,10 +288,19 @@ class MultiLayerNetwork(object):
         self.activations = activations
 
         n_ins = [input_dim] + neurons[:-1]
-        self._layers = np.empty(2*len(self.neurons))
-        for i, (n_in, n_out, act) in enumerate(zip(n_ins, self.neurons, self.activations), step=2):
-            self._layers[i] = LinearLayer(n_in, n_out)
-            self._layers[i+1] = (ReluLayer() if act.lower()
+
+        self._layers = np.empty(2*len(self.neurons), dtype=object)
+        
+        # for i, (n_in, n_out, act) in enumerate(zip(n_ins, self.neurons, self.activations), step=2):
+        #     self._layers[i] = LinearLayer(n_in, n_out)
+        #     self._layers[i+1] = (ReluLayer() if act.lower()
+        #                          == 'relu' else SigmoidLayer)
+
+        for i in range(len(n_ins)):
+            if(i % 2 == 0):
+                self._layers[i] = LinearLayer(n_ins[i], self.neurons[i])
+            else:
+                self._layers[i] = (ReluLayer() if self.activations[i].lower()
                                  == 'relu' else SigmoidLayer)
 
     def forward(self, x):
@@ -339,6 +348,9 @@ class MultiLayerNetwork(object):
         Arguments:
             learning_rate {float} -- Learning rate of update step.
         """
+
+        for layer in np.flip(self._layers):
+            layer.update_params(learning_rate)
 
 
 def save_network(network, fpath):
