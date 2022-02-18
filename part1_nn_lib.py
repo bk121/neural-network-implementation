@@ -286,19 +286,19 @@ class MultiLayerNetwork(object):
         self.input_dim = input_dim
         self.neurons = neurons
         self.activations = [(ReluLayer() if activation.lower()
-            == 'relu' else SigmoidLayer()) for activation in activations]
+                             == 'relu' else SigmoidLayer()) for activation in activations]
 
         n_ins = [input_dim] + neurons[:-1]
 
         self._layers = np.empty(2*len(self.neurons), dtype=object)
-        
+
         # for i, (n_in, n_out, act) in enumerate(zip(n_ins, self.neurons, self.activations), step=2):
         #     self._layers[i] = LinearLayer(n_in, n_out)
         #     self._layers[i+1] = (ReluLayer() if act.lower()
         #                          == 'relu' else SigmoidLayer)
 
-        self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for 
-            i in range(len(n_ins))]
+        self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for
+                        i in range(len(n_ins))]
 
         # for i in range(len(self._layers)):
         #     if(i % 2 == 0):
@@ -320,7 +320,6 @@ class MultiLayerNetwork(object):
         """
 
         a = x
-        print(x)
         for i, linear_layer in enumerate(self._layers):
             print(a)
             a = linear_layer.forward(a)
@@ -418,8 +417,7 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._loss_layer = MSELossLayer() if self.loss_fun == 'mse' 
-            else CrossEntropyLossLayer() 
+        self._loss_layer = MSELossLayer() if self.loss_fun == 'mse' else CrossEntropyLossLayer()
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -442,7 +440,7 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        shuffled_indices = np.random.shuffle(np.arange(len(input_dataset)))
+        shuffled_indices = np.random.shuffle(np.arange(np.shape(input_dataset)[0]))
         shuffled_inputs = input_dataset[shuffled_indices]
         shuffled_targets = target_dataset[shuffled_indices]
         return shuffled_inputs, shuffled_targets
@@ -474,7 +472,17 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        input_dataset, target_dataset = self.shuffle(
+            input_dataset, target_dataset) if self.shuffle_flag else input_dataset, target_dataset
+        split_input_dataset = np.array_split(input_dataset, self.batch_size)
+        split_target_dataset = np.array_split(target_dataset, self.batch_size)
+
+        for i in range(self.batch_size):
+            predictions = self.network.forward(split_input_dataset[i])
+            error = self._loss_layer.forward(predictions, split_target_dataset[i])
+            grad_z = self._loss_layer.backward()
+            grad_z = self.network.backward(grad_z)
+            self.network.update_params(self.learning_rate)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -497,7 +505,8 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        predictions = self.network.forward(input_dataset)
+        return self._loss_layer.forward(predictions, target_dataset)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -580,6 +589,7 @@ def example_main():
     y = dat[:, 4:]
 
     split_idx = int(0.8 * len(x))
+
 
     x_train = x[:split_idx]
     y_train = y[:split_idx]
