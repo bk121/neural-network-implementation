@@ -16,6 +16,7 @@ def xavier_init(size, gain=1.0):
     Returns:
         {np.ndarray} -- values of the weights.
     """
+    
     low = -gain * np.sqrt(6.0 / np.sum(size))
     high = gain * np.sqrt(6.0 / np.sum(size))
     return np.random.uniform(low=low, high=high, size=size)
@@ -228,10 +229,9 @@ class LinearLayer(Layer):
         Returns:
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
-
         self._cache_current = x
 
-        return (x@self._W+self._b)
+        return ((x @ self._W) + self._b)
 
     def backward(self, grad_z):
         """
@@ -440,9 +440,10 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        shuffled_indices = np.random.shuffle(np.arange(np.shape(input_dataset)[0]))
+        shuffled_indices = np.random.default_rng().permutation(np.shape(input_dataset)[0])
         shuffled_inputs = input_dataset[shuffled_indices]
         shuffled_targets = target_dataset[shuffled_indices]
+
         return shuffled_inputs, shuffled_targets
 
         #######################################################################
@@ -472,14 +473,17 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        input_dataset, target_dataset = self.shuffle(
-            input_dataset, target_dataset) if self.shuffle_flag else input_dataset, target_dataset
-        split_input_dataset = np.array_split(input_dataset, self.batch_size)
-        split_target_dataset = np.array_split(target_dataset, self.batch_size)
+
+        input_data, target_data = self.shuffle(
+            input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
+        number_of_splits = np.shape(input_data)[0] / self.batch_size
+        split_input_dataset = np.array_split(input_data, number_of_splits)
+        split_target_dataset = np.array_split(target_data, self.batch_size)
 
         for i in range(self.batch_size):
             predictions = self.network.forward(split_input_dataset[i])
-            error = self._loss_layer.forward(predictions, split_target_dataset[i])
+            error = self._loss_layer.forward(
+                predictions, split_target_dataset[i])
             grad_z = self._loss_layer.backward()
             grad_z = self.network.backward(grad_z)
             self.network.update_params(self.learning_rate)
@@ -531,7 +535,12 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+
+        # Scale smallest value to a and largest value to b: for example [a,b] = [0,1]
+        self._a = 0
+        self._b = 1
+        self._X_min = np.amin(data)
+        self._X_max = np.amax(data)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -550,7 +559,11 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        normalised_data = self._a + \
+            ((data - self._X_min)) * (self._b - self._a) / \
+            (self._X_max - self._X_min)
+
+        return normalised_data
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -569,7 +582,10 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        reverted_data = (data * (self._X_max - self._X_min) -
+                         self._a) / (self._b - self._a) + self._X_min
+        
+        return reverted_data
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -589,7 +605,6 @@ def example_main():
     y = dat[:, 4:]
 
     split_idx = int(0.8 * len(x))
-
 
     x_train = x[:split_idx]
     y_train = y[:split_idx]
