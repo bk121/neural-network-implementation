@@ -248,7 +248,7 @@ class LinearLayer(Layer):
                 input, of shape (batch_size, n_in).
         """
         self._grad_W_current = self._cache_current.T@grad_z
-        self._grad_b_current = np.full((1, self.n_in), 1)@grad_z
+        self._grad_b_current = np.full((self.n_in, 1), 1)@grad_z
 
         return grad_z@self._W.T
 
