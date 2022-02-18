@@ -285,7 +285,8 @@ class MultiLayerNetwork(object):
         """
         self.input_dim = input_dim
         self.neurons = neurons
-        self.activations = activations
+        self.activations = [(ReluLayer() if activation.lower()
+            == 'relu' else SigmoidLayer()) for activation in activations]
 
         n_ins = [input_dim] + neurons[:-1]
 
@@ -296,12 +297,15 @@ class MultiLayerNetwork(object):
         #     self._layers[i+1] = (ReluLayer() if act.lower()
         #                          == 'relu' else SigmoidLayer)
 
-        for i in range(len(n_ins)):
-            if(i % 2 == 0):
-                self._layers[i] = LinearLayer(n_ins[i], self.neurons[i])
-            else:
-                self._layers[i] = (ReluLayer() if self.activations[i].lower()
-                                 == 'relu' else SigmoidLayer)
+        self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for 
+            i in range(len(n_ins))]
+
+        # for i in range(len(self._layers)):
+        #     if(i % 2 == 0):
+        #         self._layers[i] = LinearLayer(n_ins[i], self.neurons[i])
+        #     else:
+        #         self._layers[i] = (ReluLayer() if self.activations[i].lower()
+        #                          == 'relu' else SigmoidLayer())
 
     def forward(self, x):
         """
@@ -314,9 +318,13 @@ class MultiLayerNetwork(object):
             {np.ndarray} -- Output array of shape (batch_size,
                 #_neurons_in_final_layer)
         """
+
         a = x
-        for layer in self._layers:
-            a = layer.forward(a)
+        print(x)
+        for i, linear_layer in enumerate(self._layers):
+            print(a)
+            a = linear_layer.forward(a)
+            a = self.activations[i].forward(a)
 
         return a
 
@@ -336,8 +344,11 @@ class MultiLayerNetwork(object):
                 input, of shape (batch_size, input_dim).
         """
         d = grad_z
-        for layer in np.flip(self._layers):
-            d = layer.backward(d)
+        reverse_activations = self.activations.reverse()
+
+        for i, linear_layer in enumerate(np.flip(self._layers)):
+            d = reverse_activations[i].backward(d)
+            d = linear_layer.backward(d)
         return d
 
     def update_params(self, learning_rate):
@@ -407,7 +418,8 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._loss_layer = None
+        self._loss_layer = MSELossLayer() if self.loss_fun == 'mse' 
+            else CrossEntropyLossLayer() 
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -430,7 +442,10 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        shuffled_indices = np.random.shuffle(np.arange(len(input_dataset)))
+        shuffled_inputs = input_dataset[shuffled_indices]
+        shuffled_targets = target_dataset[shuffled_indices]
+        return shuffled_inputs, shuffled_targets
 
         #######################################################################
         #                       ** END OF YOUR CODE **
