@@ -16,7 +16,7 @@ def xavier_init(size, gain=1.0):
     Returns:
         {np.ndarray} -- values of the weights.
     """
-    
+
     low = -gain * np.sqrt(6.0 / np.sum(size))
     high = gain * np.sqrt(6.0 / np.sum(size))
     return np.random.uniform(low=low, high=high, size=size)
@@ -206,7 +206,7 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._W = xavier_init((n_in, n_out), gain=1)
-        self._b = np.zeros((n_in, 1))
+        self._b = np.zeros((1, n_out))
 
         self._cache_current = None
         self._grad_W_current = None
@@ -248,7 +248,7 @@ class LinearLayer(Layer):
                 input, of shape (batch_size, n_in).
         """
         self._grad_W_current = self._cache_current.T@grad_z
-        self._grad_b_current = np.full((self.n_in, 1), 1)@grad_z
+        self._grad_b_current = np.full((self.n_out, 1), 1)@grad_z
 
         return grad_z@self._W.T
 
@@ -260,7 +260,7 @@ class LinearLayer(Layer):
         Arguments:
             learning_rate {float} -- Learning rate of update step.
         """
-        self._w = self._w - learning_rate*self._grad_W_current
+        self._W = self._W - learning_rate*self._grad_W_current
         self._b = self._b - learning_rate*self._grad_b_current
 
 
@@ -321,7 +321,6 @@ class MultiLayerNetwork(object):
 
         a = x
         for i, linear_layer in enumerate(self._layers):
-            print(a)
             a = linear_layer.forward(a)
             a = self.activations[i].forward(a)
 
@@ -343,7 +342,7 @@ class MultiLayerNetwork(object):
                 input, of shape (batch_size, input_dim).
         """
         d = grad_z
-        reverse_activations = self.activations.reverse()
+        reverse_activations = self.activations[::-1]
 
         for i, linear_layer in enumerate(np.flip(self._layers)):
             d = reverse_activations[i].backward(d)
@@ -440,7 +439,8 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        shuffled_indices = np.random.default_rng().permutation(np.shape(input_dataset)[0])
+        shuffled_indices = np.random.default_rng(
+        ).permutation(np.shape(input_dataset)[0])
         shuffled_inputs = input_dataset[shuffled_indices]
         shuffled_targets = target_dataset[shuffled_indices]
 
@@ -478,7 +478,8 @@ class Trainer(object):
             input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
         number_of_splits = np.shape(input_data)[0] / self.batch_size
         split_input_dataset = np.array_split(input_data, number_of_splits)
-        split_target_dataset = np.array_split(target_data, self.batch_size)
+        split_target_dataset = np.array_split(target_data, number_of_splits)
+        
 
         for i in range(self.batch_size):
             predictions = self.network.forward(split_input_dataset[i])
@@ -537,8 +538,8 @@ class Preprocessor(object):
         #######################################################################
 
         # Scale smallest value to a and largest value to b: for example [a,b] = [0,1]
-        self._a = 0
-        self._b = 1
+        self._lower_range = 0
+        self._upper_range = 1
         self._X_min = np.amin(data)
         self._X_max = np.amax(data)
 
@@ -559,8 +560,8 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        normalised_data = self._a + \
-            ((data - self._X_min)) * (self._b - self._a) / \
+        normalised_data = self._lower_range + \
+            ((data - self._X_min)) * (self._upper_range - self._lower_range) / \
             (self._X_max - self._X_min)
 
         return normalised_data
@@ -583,8 +584,8 @@ class Preprocessor(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
         reverted_data = (data * (self._X_max - self._X_min) -
-                         self._a) / (self._b - self._a) + self._X_min
-        
+                         self._lower_range) / (self._upper_range - self._lower_range) + self._X_min
+
         return reverted_data
 
         #######################################################################
