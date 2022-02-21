@@ -182,7 +182,8 @@ class ReluLayer(Layer):
             {np.ndarray} -- Array containing gradient with repect to layer
                 input, of shape (batch_size, n_in).
         """
-        result = self._cache_current[self._cache_current > 0] = 1
+        result = self._cache_current
+        result[self._cache_current > 0] = 1
         return result
 
 
@@ -248,7 +249,7 @@ class LinearLayer(Layer):
                 input, of shape (batch_size, n_in).
         """
         self._grad_W_current = self._cache_current.T@grad_z
-        self._grad_b_current = np.full((self.n_out, 1), 1)@grad_z
+        self._grad_b_current = np.full((1, len(grad_z)), 1)@grad_z
 
         return grad_z@self._W.T
 
@@ -344,9 +345,9 @@ class MultiLayerNetwork(object):
         d = grad_z
         reverse_activations = self.activations[::-1]
 
-        for i, linear_layer in enumerate(np.flip(self._layers)):
+        for i, layer in enumerate(np.flip(self._layers)):
             d = reverse_activations[i].backward(d)
-            d = linear_layer.backward(d)
+            d = layer.backward(d)
         return d
 
     def update_params(self, learning_rate):
@@ -479,7 +480,6 @@ class Trainer(object):
         number_of_splits = np.shape(input_data)[0] / self.batch_size
         split_input_dataset = np.array_split(input_data, number_of_splits)
         split_target_dataset = np.array_split(target_data, number_of_splits)
-        
 
         for i in range(self.batch_size):
             predictions = self.network.forward(split_input_dataset[i])
