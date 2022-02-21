@@ -58,22 +58,20 @@ class Regressor():
                 self.mean_x = x.mean(skipna=True, numeric_only=True)
 
         X = x.copy()  # Copy the dataframe
-
         X.fillna(self.mean_x)  # Not sure if this is correct default
 
         one_hots = self._lb.transform(
             X["ocean_proximity"])  # Form one-hot vectors
-
         # Make it so the column can take lists
         X.astype({"ocean_proximity": "object"})
-        for i, one_hot in enumerate(one_hots):
+        for i, one_hot in zip(X.index, one_hots):
             # one_hot  # needs to take lists in NN model
             X.at[i, "ocean_proximity"] = 0  # Replace words with vectors FIX
 
             for column, mi, ma in zip(X, self.min_x, self.max_x):
-                if column != "ocean_proximity":
+                if column != "ocean_proximity":  # Don't normalise word one
                     X.at[i, column] = (X.at[i, column]-mi) / \
-                        (ma-mi)  # min/max normalisation
+                        (ma-mi)  # Min/max normalisation
 
         return X, (y if isinstance(y, pd.DataFrame) else None)
 
@@ -200,8 +198,15 @@ def example_main():
     data = pd.read_csv("housing.csv")
 
     # Spliting input and output
-    x_train = data.loc[:, data.columns != output_label]
-    y_train = data.loc[:, [output_label]]
+    x = data.loc[:, data.columns != output_label]
+    y = data.loc[:, [output_label]]
+
+    split_idx = int(0.8 * len(x))
+
+    x_train = x.iloc[:split_idx]
+    y_train = y.iloc[:split_idx]
+    x_val = x.iloc[split_idx:]
+    y_val = y.iloc[split_idx:]
 
     # Training
     # This example trains on the whole available dataset.
@@ -212,7 +217,7 @@ def example_main():
     save_regressor(regressor)
 
     # Error
-    error = regressor.score(x_train, y_train)
+    error = regressor.score(x_val, y_val)
     print("\nRegressor error: {}\n".format(error))
 
 
