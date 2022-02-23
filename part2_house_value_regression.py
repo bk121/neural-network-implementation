@@ -9,7 +9,7 @@ import part1_nn_lib as nn
 class Regressor():
 
     def __init__(self, x, nb_epoch=1000,
-                 neurons=[16, 3],
+                 neurons=[16, 1],
                  activations=["relu", "identity"]):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
@@ -72,13 +72,13 @@ class Regressor():
                 if column != "ocean_proximity":  # Don't normalise word one
                     X.at[i, column] = (X.at[i, column]-mi) / \
                         (ma-mi)  # Min/max normalisation
-
+        print(X)
         return X, (y if isinstance(y, pd.DataFrame) else None)
 
     def fit(self, x, y,
             batch_size=8,
             learning_rate=0.01,
-            loss_fun="bce",
+            loss_fun="mse",
             shuffle_flag=False):
         """
         Regressor training function

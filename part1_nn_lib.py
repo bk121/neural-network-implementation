@@ -165,7 +165,9 @@ class ReluLayer(Layer):
         Returns:
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
-        self._cache_current = x.clip(min=0)
+        # self._cache_current = x.clip(min=0)
+        # Leaky ReLU implementation -- 0.01 is an arbitrary "very"
+        self._cache_current = np.where(x > 0, x, x * 0.02)
         #print('c',self._cache_current)
         return self._cache_current
 
@@ -183,8 +185,8 @@ class ReluLayer(Layer):
             {np.ndarray} -- Array containing gradient with repect to layer
                 input, of shape (batch_size, n_in).
         """
-        result = self._cache_current
-        result[self._cache_current > 0] = 1
+        result = np.where(self._cache_current > 0, 1, 0.02)
+        # result[self._cache_current > 0] = 1
         return result
 
 
@@ -231,7 +233,10 @@ class LinearLayer(Layer):
         Returns:
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
+        # print(x)
+        # print(self._W)
         self._cache_current = x
+        # print((x @ self._W) + self._b)
 
         return ((x @ self._W) + self._b)
 
@@ -251,9 +256,6 @@ class LinearLayer(Layer):
         """
         self._grad_W_current = self._cache_current.T@grad_z
         self._grad_b_current = np.ones((len(grad_z), 1)).T@grad_z
-        # print(self._grad_W_current)
-        # print('weoghts', self._W)
-        # print('bias',self._grad_b_current)
 
         return grad_z@self._W.T
 
@@ -268,11 +270,28 @@ class LinearLayer(Layer):
         # print('BEFORE')
         # print('weoghts', self._W)
         # print('bias',self._b)
+        temp = self._W
         self._W = self._W - learning_rate*self._grad_W_current
         self._b = self._b - learning_rate*self._grad_b_current
         # print('AFTER')
         # print('weoghts', self._W)
         # print('bias',self._b)
+        # lhs = self._grad_W_current
+        # rhs = (temp - self._W)  / learning_rate
+        # print("LHS")
+        # print(lhs)
+        # print("RHS")
+        # print(rhs)
+        # # print("SUBTRACTING")
+        # # print((lhs == rhs).all())
+        # # print("FINISH")
+
+        # if (lhs == 0).all():
+        #     quit()
+        # # else:
+        #     print("FALSE")
+        #     quit()
+
 
 
 class MultiLayerNetwork(object):
@@ -318,8 +337,6 @@ class MultiLayerNetwork(object):
         self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for
                         i in range(len(n_ins))]
 
-        print(self._layers)
-
 
 
     def forward(self, x):
@@ -342,7 +359,9 @@ class MultiLayerNetwork(object):
         #         a = self.activations[i].forward(a)
 
         for i, linear_layer in enumerate(self._layers):
+            # print("BEFORE", a)
             a = linear_layer.forward(a)
+            # print("AFTER", a)
             a = self.activations[i].forward(a)
         return a
 
@@ -513,13 +532,13 @@ class Trainer(object):
                 predictions = self.network.forward(split_input_dataset[i])
                 error = self._loss_layer.forward(
                     predictions, split_target_dataset[i])
+                
                 grad_z = self._loss_layer.backward()
                 grad_z = self.network.backward(grad_z)
                 self.network.update_params(self.learning_rate)
 
-            if(j%100 ==0):
+            if(j % 100 == 0):
                 print("Epoch: ", j, "Error: ", error)
-
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -628,8 +647,8 @@ class Preprocessor(object):
 def example_main():
     input_dim = 4
     neurons = [16, 3]
-    activations = ["sigmoid", "sigmoid"]
-    # activations = ["relu", "identity"]
+    # activations = ["sigmoid", "sigmoid"]
+    activations = ["relu", "identity"]
 
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
