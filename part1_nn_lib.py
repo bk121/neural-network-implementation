@@ -309,7 +309,7 @@ class MultiLayerNetwork(object):
         #     else:
         #         self.activations.append('identity')
 
-        print(self.activations)
+        # print(self.activations)
 
         n_ins = [input_dim] + neurons[:-1]
 
@@ -318,7 +318,7 @@ class MultiLayerNetwork(object):
         self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for
                         i in range(len(n_ins))]
 
-        
+        print(self._layers)
 
 
 
@@ -630,6 +630,7 @@ def example_main():
     neurons = [16, 3]
     activations = ["sigmoid", "sigmoid"]
     # activations = ["relu", "identity"]
+
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
     dat = np.loadtxt("iris.dat")
