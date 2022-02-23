@@ -299,24 +299,28 @@ class MultiLayerNetwork(object):
         self.activations = [(ReluLayer() if activation.lower()
                              == 'relu' else SigmoidLayer()) for activation in activations]
 
+                             
+        # self.activations = []
+        # for i, activation in enumerate(activations):
+        #     if(activations[i].lower() == 'relu'):
+        #         self.activations.append(ReluLayer())
+        #     elif(activations[i].lower() == 'sigmoid'):
+        #         self.activations.append(SigmoidLayer())
+        #     else:
+        #         self.activations.append('identity')
+
+        print(self.activations)
+
         n_ins = [input_dim] + neurons[:-1]
 
         self._layers = np.empty(2*len(self.neurons), dtype=object)
 
-        # for i, (n_in, n_out, act) in enumerate(zip(n_ins, self.neurons, self.activations), step=2):
-        #     self._layers[i] = LinearLayer(n_in, n_out)
-        #     self._layers[i+1] = (ReluLayer() if act.lower()
-        #                          == 'relu' else SigmoidLayer)
-
         self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for
                         i in range(len(n_ins))]
 
-        # for i in range(len(self._layers)):
-        #     if(i % 2 == 0):
-        #         self._layers[i] = LinearLayer(n_ins[i], self.neurons[i])
-        #     else:
-        #         self._layers[i] = (ReluLayer() if self.activations[i].lower()
-        #                          == 'relu' else SigmoidLayer())
+        
+
+
 
     def forward(self, x):
         """
@@ -330,10 +334,16 @@ class MultiLayerNetwork(object):
         """
 
         a = x
+        # for i, linear_layer in enumerate(self._layers):
+        #     a = linear_layer.forward(a)
+        #     if(self.activations[i] == 'identity'):
+        #         a = a
+        #     else:
+        #         a = self.activations[i].forward(a)
+
         for i, linear_layer in enumerate(self._layers):
             a = linear_layer.forward(a)
             a = self.activations[i].forward(a)
-
         return a
 
     def __call__(self, x):
@@ -353,6 +363,14 @@ class MultiLayerNetwork(object):
         """
         d = grad_z
         reverse_activations = self.activations[::-1]
+
+        # for i, layer in enumerate(np.flip(self._layers)):
+        #     if(reverse_activations[i] == 'identity'):
+        #         d = d
+        #     else:
+        #         d = reverse_activations[i].backward(d)
+        #     d = layer.backward(d)
+        # return d
 
         for i, layer in enumerate(np.flip(self._layers)):
             d = reverse_activations[i].backward(d)
