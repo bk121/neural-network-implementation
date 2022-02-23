@@ -2,7 +2,7 @@ import torch
 import pickle
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer, OneHotEncoder
 import part1_nn_lib as nn
 
 
@@ -10,7 +10,7 @@ class Regressor():
 
     def __init__(self, x, nb_epoch=1000,
                  neurons=[16, 1],
-                 activations=["relu", "identity"]):
+                 activations=["relu", "relu"]):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -66,13 +66,13 @@ class Regressor():
         X.astype({"ocean_proximity": "object"})
         for i, one_hot in zip(X.index, one_hots):
             # one_hot  # needs to take lists in NN model
-            X.at[i, "ocean_proximity"] = 0  # Replace words with vectors FIX
+            X.at[i, "ocean_proximity"] = one_hot # Replace words with vectors FIX
 
             for column, mi, ma in zip(X, self.min_x, self.max_x):
                 if column != "ocean_proximity":  # Don't normalise word one
                     X.at[i, column] = (X.at[i, column]-mi) / \
                         (ma-mi)  # Min/max normalisation
-        print(X)
+
         return X, (y if isinstance(y, pd.DataFrame) else None)
 
     def fit(self, x, y,
@@ -101,8 +101,8 @@ class Regressor():
             loss_fun=loss_fun,
             shuffle_flag=shuffle_flag
         )
-        X_numpy = X.copy().to_numpy().astype(float)
-        Y_numpy = Y.copy().to_numpy().astype(float)
+        X_numpy = X.copy().to_numpy()
+        Y_numpy = Y.copy().to_numpy()
         trainer.train(X_numpy, Y_numpy)
         return self
 
