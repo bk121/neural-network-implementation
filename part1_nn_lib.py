@@ -166,6 +166,7 @@ class ReluLayer(Layer):
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
         self._cache_current = x.clip(min=0)
+        #print('c',self._cache_current)
         return self._cache_current
 
     def backward(self, grad_z):
@@ -249,7 +250,10 @@ class LinearLayer(Layer):
                 input, of shape (batch_size, n_in).
         """
         self._grad_W_current = self._cache_current.T@grad_z
-        self._grad_b_current = np.full((1, len(grad_z)), 1)@grad_z
+        self._grad_b_current = np.ones((len(grad_z), 1)).T@grad_z
+        # print(self._grad_W_current)
+        # print('weoghts', self._W)
+        # print('bias',self._grad_b_current)
 
         return grad_z@self._W.T
 
@@ -261,8 +265,14 @@ class LinearLayer(Layer):
         Arguments:
             learning_rate {float} -- Learning rate of update step.
         """
+        # print('BEFORE')
+        # print('weoghts', self._W)
+        # print('bias',self._b)
         self._W = self._W - learning_rate*self._grad_W_current
         self._b = self._b - learning_rate*self._grad_b_current
+        # print('AFTER')
+        # print('weoghts', self._W)
+        # print('bias',self._b)
 
 
 class MultiLayerNetwork(object):
@@ -316,8 +326,7 @@ class MultiLayerNetwork(object):
             x {np.ndarray} -- Input array of shape (batch_size, input_dim).
 
         Returns:
-            {np.ndarray} -- Output array of shape (batch_size,
-                #_neurons_in_final_layer)
+            {np.ndarray} -- Output ar0.54643265yer)
         """
 
         a = x
@@ -359,7 +368,7 @@ class MultiLayerNetwork(object):
             learning_rate {float} -- Learning rate of update step.
         """
 
-        for layer in np.flip(self._layers):
+        for layer in self._layers:
             layer.update_params(learning_rate)
 
 
@@ -407,7 +416,7 @@ class Trainer(object):
             - shuffle_flag {bool} -- If True, training data is shuffled before
                 training.
         """
-        self.network = network
+        self.network = network    
         self.batch_size = batch_size
         self.nb_epoch = nb_epoch
         self.learning_rate = learning_rate
@@ -475,19 +484,24 @@ class Trainer(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        input_data, target_data = self.shuffle(
-            input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
-        number_of_splits = np.shape(input_data)[0] / self.batch_size
-        split_input_dataset = np.array_split(input_data, number_of_splits)
-        split_target_dataset = np.array_split(target_data, number_of_splits)
+        for j in range(self.nb_epoch):
+            input_data, target_data = self.shuffle(
+                input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
+            number_of_splits = np.shape(input_data)[0] / self.batch_size
+            split_input_dataset = np.array_split(input_data, number_of_splits)
+            split_target_dataset = np.array_split(target_data, number_of_splits)
 
-        for i in range(self.batch_size):
-            predictions = self.network.forward(split_input_dataset[i])
-            error = self._loss_layer.forward(
-                predictions, split_target_dataset[i])
-            grad_z = self._loss_layer.backward()
-            grad_z = self.network.backward(grad_z)
-            self.network.update_params(self.learning_rate)
+            for i in range(int(number_of_splits)):
+                predictions = self.network.forward(split_input_dataset[i])
+                error = self._loss_layer.forward(
+                    predictions, split_target_dataset[i])
+                grad_z = self._loss_layer.backward()
+                grad_z = self.network.backward(grad_z)
+                self.network.update_params(self.learning_rate)
+
+            if(j%100 ==0):
+                print("Epoch: ", j, "Error: ", error)
+
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -596,7 +610,8 @@ class Preprocessor(object):
 def example_main():
     input_dim = 4
     neurons = [16, 3]
-    activations = ["relu", "identity"]
+    activations = ["sigmoid", "sigmoid"]
+    # activations = ["relu", "identity"]
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
     dat = np.loadtxt("iris.dat")
@@ -617,10 +632,20 @@ def example_main():
     x_train_pre = prep_input.apply(x_train)
     x_val_pre = prep_input.apply(x_val)
 
+    # predictions = net.forward(x_train_pre)
+    # cll = CrossEntropyLossLayer()
+    # cll.forward(predictions, y_train)
+    # grad_z = cll.backward()
+    # error = net.backward(grad_z)
+    # net.update_params(0.1)
+    # print("predictions", predictions)
+    # print("gradz", grad_z)
+    # print("error", error)
+
     trainer = Trainer(
         network=net,
         batch_size=8,
-        nb_epoch=1000,
+        nb_epoch=10000,
         learning_rate=0.01,
         loss_fun="bce",
         shuffle_flag=True,
