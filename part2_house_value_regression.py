@@ -10,7 +10,7 @@ class Regressor():
 
     def __init__(self, x, nb_epoch=10000,
                  neurons=[16, 1],
-                 activations=["sigmoid", "relu"]):
+                 activations=["sigmoid", "sigmoid"]):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -120,7 +120,7 @@ class Regressor():
 
         """
         X, _ = self._preprocessor(x, training=False)  # Do not forget
-        X_numpy = X.copy().to_numpy().astype(float)
+        X_numpy = X.copy().to_numpy()
         return self.net(X_numpy).argmax(axis=1).squeeze()
 
     def score(self, x, y):

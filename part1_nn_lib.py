@@ -1,7 +1,6 @@
 from matplotlib.pyplot import step
 import numpy as np
 import pickle
-
 from pyrsistent import b
 
 
@@ -19,7 +18,15 @@ def xavier_init(size, gain=1.0):
 
     low = -gain * np.sqrt(6.0 / np.sum(size))
     high = gain * np.sqrt(6.0 / np.sum(size))
+
     return np.random.uniform(low=low, high=high, size=size)
+
+# def he_init(size):
+
+#     weight_range = np.sqrt(2.0 / size[0])
+#     random_numbers = np.random.rand(size[0], size[1])
+
+#     return random_numbers * weight_range
 
 
 class Layer:
@@ -165,10 +172,12 @@ class ReluLayer(Layer):
         Returns:
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
-        # self._cache_current = x.clip(min=0)
+        # Standard ReLU implementation
+        self._cache_current = x.clip(min=0)
+
         # Leaky ReLU implementation -- 0.01 is an arbitrary "very"
-        self._cache_current = np.where(x > 0, x, x * 0.02)
-        # print('c',self._cache_current)
+        # self._cache_current = np.where(x > 0, x, x * 0.00)
+
         return self._cache_current
 
     def backward(self, grad_z):
@@ -185,10 +194,24 @@ class ReluLayer(Layer):
             {np.ndarray} -- Array containing gradient with repect to layer
                 input, of shape (batch_size, n_in).
         """
-        result = np.where(self._cache_current > 0, 1, 0.02)
-        # result[self._cache_current > 0] = 1
-        return result
+        # Standard RELU implementation
+        result = self._cache_current[self._cache_current > 0] = 1
 
+        # Leaky Relu implementation
+        # result = np.where(self._cache_current > 0, 1, 0.00)
+
+        return grad_z * result
+
+class LinearActivationLayer(object):
+    def __init__(self):
+        self._cache_current = None
+    
+    def forward(self, x):
+        self._cache_current = x
+        return self._cache_current
+    
+    def backward(self, grad_z):
+        return grad_z
 
 class LinearLayer(Layer):
     """
@@ -210,6 +233,7 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._W = xavier_init((n_in, n_out), gain=1)
+        # self._W = he_init((n_in, n_out))
         self._b = np.zeros((1, n_out))
 
         self._cache_current = None
@@ -233,10 +257,7 @@ class LinearLayer(Layer):
         Returns:
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
-        # print(x)
-        # print(self._W)
         self._cache_current = x
-        # print((x @ self._W) + self._b)
 
         return ((x @ self._W) + self._b)
 
@@ -256,6 +277,8 @@ class LinearLayer(Layer):
         """
         self._grad_W_current = self._cache_current.T@grad_z
         self._grad_b_current = np.ones((len(grad_z), 1)).T@grad_z
+        if (np.isnan(grad_z)).all():
+            quit()
 
         return grad_z@self._W.T
 
@@ -267,30 +290,16 @@ class LinearLayer(Layer):
         Arguments:
             learning_rate {float} -- Learning rate of update step.
         """
-        # print('BEFORE')
-        # print('weoghts', self._W)
-        # print('bias',self._b)
         temp = self._W
         self._W = self._W - learning_rate*self._grad_W_current
         self._b = self._b - learning_rate*self._grad_b_current
-        # print('AFTER')
-        # print('weoghts', self._W)
-        # print('bias',self._b)
-        # lhs = self._grad_W_current
-        # rhs = (temp - self._W)  / learning_rate
-        # print("LHS")
-        # print(lhs)
-        # print("RHS")
-        # print(rhs)
-        # # print("SUBTRACTING")
-        # # print((lhs == rhs).all())
-        # # print("FINISH")
-
-        # if (lhs == 0).all():
-        #     quit()
-        # # else:
-        #     print("FALSE")
-        #     quit()
+        lhs = self._grad_W_current
+        rhs = (temp - self._W) / learning_rate
+        result = np.round(lhs - rhs, 2)
+        if (result > abs(0.0001)).any():
+            print("Check failed")
+        # else:
+        #     print(lhs)
 
 
 class MultiLayerNetwork(object):
@@ -314,19 +323,23 @@ class MultiLayerNetwork(object):
         """
         self.input_dim = input_dim
         self.neurons = neurons
-        self.activations = [(ReluLayer() if activation.lower()
-                             == 'relu' else SigmoidLayer()) for activation in activations]
+        self.activations = []
+        for activation in activations:
+            if activation.lower() == "relu":
+                self.activations.append(ReluLayer())
+            elif activation.lower() == "sigmoid":
+                self.activations.append(SigmoidLayer())
+            elif activation.lower() == "linear":
+                self.activations.append(LinearActivationLayer())
+        # activation_functions = {
+        #     "relu": ReluLayer(),
+        #     "sigmoid": SigmoidLayer(),
+        #     "linear": LinearActivationFunction()
+        # }
+        # self.activations = [activation_functions[activation.lower()] for activation in activations]
 
-        # self.activations = []
-        # for i, activation in enumerate(activations):
-        #     if(activations[i].lower() == 'relu'):
-        #         self.activations.append(ReluLayer())
-        #     elif(activations[i].lower() == 'sigmoid'):
-        #         self.activations.append(SigmoidLayer())
-        #     else:
-        #         self.activations.append('identity')
-
-        # print(self.activations)
+        # self.activations = [(ReluLayer() if activation.lower()
+        #                      == 'relu' else SigmoidLayer()) for activation in activations]
 
         n_ins = [input_dim] + neurons[:-1]
 
@@ -347,17 +360,9 @@ class MultiLayerNetwork(object):
         """
 
         a = x
-        # for i, linear_layer in enumerate(self._layers):
-        #     a = linear_layer.forward(a)
-        #     if(self.activations[i] == 'identity'):
-        #         a = a
-        #     else:
-        #         a = self.activations[i].forward(a)
 
         for i, linear_layer in enumerate(self._layers):
-            # print("BEFORE", a)
             a = linear_layer.forward(a)
-            # print("AFTER", a)
             a = self.activations[i].forward(a)
         return a
 
@@ -378,14 +383,6 @@ class MultiLayerNetwork(object):
         """
         d = grad_z
         reverse_activations = self.activations[::-1]
-
-        # for i, layer in enumerate(np.flip(self._layers)):
-        #     if(reverse_activations[i] == 'identity'):
-        #         d = d
-        #     else:
-        #         d = reverse_activations[i].backward(d)
-        #     d = layer.backward(d)
-        # return d
 
         for i, layer in enumerate(np.flip(self._layers)):
             d = reverse_activations[i].backward(d)
@@ -643,9 +640,14 @@ class Preprocessor(object):
 
 def example_main():
     input_dim = 4
-    neurons = [16, 30, 15, 3]
+
+    neurons = [16, 3]
     # activations = ["sigmoid", "sigmoid"]
-    activations = ["sigmoid", "sigmoid", "sigmoid", "sigmoid"]
+    activations = ["relu", "relu"]
+
+    # neurons = [16, 30, 15, 3]
+    # activations = ["relu", "relu", "relu", "relu"]
+    # activations = ["sigmoid", "sigmoid", "sigmoid", "sigmoid"]
 
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
@@ -680,7 +682,7 @@ def example_main():
     trainer = Trainer(
         network=net,
         batch_size=8,
-        nb_epoch=50000,
+        nb_epoch=10000,
         learning_rate=0.01,
         loss_fun="bce",
         shuffle_flag=True,
