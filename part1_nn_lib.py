@@ -168,7 +168,7 @@ class ReluLayer(Layer):
         # self._cache_current = x.clip(min=0)
         # Leaky ReLU implementation -- 0.01 is an arbitrary "very"
         self._cache_current = np.where(x > 0, x, x * 0.02)
-        #print('c',self._cache_current)
+        # print('c',self._cache_current)
         return self._cache_current
 
     def backward(self, grad_z):
@@ -293,7 +293,6 @@ class LinearLayer(Layer):
         #     quit()
 
 
-
 class MultiLayerNetwork(object):
     """
     MultiLayerNetwork: A network consisting of stacked linear layers and
@@ -318,7 +317,6 @@ class MultiLayerNetwork(object):
         self.activations = [(ReluLayer() if activation.lower()
                              == 'relu' else SigmoidLayer()) for activation in activations]
 
-                             
         # self.activations = []
         # for i, activation in enumerate(activations):
         #     if(activations[i].lower() == 'relu'):
@@ -336,8 +334,6 @@ class MultiLayerNetwork(object):
 
         self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for
                         i in range(len(n_ins))]
-
-
 
     def forward(self, x):
         """
@@ -453,7 +449,7 @@ class Trainer(object):
             - shuffle_flag {bool} -- If True, training data is shuffled before
                 training.
         """
-        self.network = network    
+        self.network = network
         self.batch_size = batch_size
         self.nb_epoch = nb_epoch
         self.learning_rate = learning_rate
@@ -526,13 +522,14 @@ class Trainer(object):
                 input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
             number_of_splits = np.shape(input_data)[0] / self.batch_size
             split_input_dataset = np.array_split(input_data, number_of_splits)
-            split_target_dataset = np.array_split(target_data, number_of_splits)
+            split_target_dataset = np.array_split(
+                target_data, number_of_splits)
 
             for i in range(int(number_of_splits)):
                 predictions = self.network.forward(split_input_dataset[i])
                 error = self._loss_layer.forward(
                     predictions, split_target_dataset[i])
-                
+
                 grad_z = self._loss_layer.backward()
                 grad_z = self.network.backward(grad_z)
                 self.network.update_params(self.learning_rate)
@@ -646,9 +643,9 @@ class Preprocessor(object):
 
 def example_main():
     input_dim = 4
-    neurons = [16, 3]
+    neurons = [16, 30, 15, 3]
     # activations = ["sigmoid", "sigmoid"]
-    activations = ["relu", "identity"]
+    activations = ["sigmoid", "sigmoid", "sigmoid", "sigmoid"]
 
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
@@ -683,7 +680,7 @@ def example_main():
     trainer = Trainer(
         network=net,
         batch_size=8,
-        nb_epoch=10000,
+        nb_epoch=50000,
         learning_rate=0.01,
         loss_fun="bce",
         shuffle_flag=True,

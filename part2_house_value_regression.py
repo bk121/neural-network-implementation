@@ -8,9 +8,9 @@ import part1_nn_lib as nn
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch=1000,
+    def __init__(self, x, nb_epoch=10000,
                  neurons=[16, 1],
-                 activations=["relu", "relu"]):
+                 activations=["sigmoid", "relu"]):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -66,7 +66,8 @@ class Regressor():
         X.astype({"ocean_proximity": "object"})
         for i, one_hot in zip(X.index, one_hots):
             # one_hot  # needs to take lists in NN model
-            X.at[i, "ocean_proximity"] = one_hot # Replace words with vectors FIX
+            # one_hot # Replace words with vectors FIX
+            X.at[i, "ocean_proximity"] = 0.5
 
             for column, mi, ma in zip(X, self.min_x, self.max_x):
                 if column != "ocean_proximity":  # Don't normalise word one
@@ -101,8 +102,8 @@ class Regressor():
             loss_fun=loss_fun,
             shuffle_flag=shuffle_flag
         )
-        X_numpy = X.copy().to_numpy()
-        Y_numpy = Y.copy().to_numpy()
+        X_numpy = X.copy().to_numpy().astype(float)
+        Y_numpy = Y.copy().to_numpy().astype(float)
         trainer.train(X_numpy, Y_numpy)
         return self
 
@@ -212,7 +213,7 @@ def example_main():
     # This example trains on the whole available dataset.
     # You probably want to separate some held-out data
     # to make sure the model isn't overfitting
-    regressor = Regressor(x_train, nb_epoch=10)
+    regressor = Regressor(x_train, nb_epoch=10000)
     regressor.fit(x_train, y_train)
     save_regressor(regressor)
 
