@@ -94,7 +94,6 @@ class CrossEntropyLossLayer(Layer):
         n_obs = len(y_target)
         probs = self.softmax(inputs)
         self._cache_current = y_target, probs
-
         out = -1 / n_obs * np.sum(y_target * np.log(probs))
         return out
 
@@ -325,30 +324,16 @@ class MultiLayerNetwork(object):
         """
         self.input_dim = input_dim
         self.neurons = neurons
-        self.activations = []
-        for activation in activations:
-            if activation.lower() == "relu":
-                self.activations.append(ReluLayer())
-            elif activation.lower() == "sigmoid":
-                self.activations.append(SigmoidLayer())
-            elif activation.lower() == "linear":
-                self.activations.append(LinearActivationLayer())
-        # activation_functions = {
-        #     "relu": ReluLayer(),
-        #     "sigmoid": SigmoidLayer(),
-        #     "linear": LinearActivationFunction()
-        # }
-        # self.activations = [activation_functions[activation.lower()] for activation in activations]
-
-        # self.activations = [(ReluLayer() if activation.lower()
-        #                      == 'relu' else SigmoidLayer()) for activation in activations]
-
+        self._layers = []
         n_ins = [input_dim] + neurons[:-1]
-
-        self._layers = np.empty(2*len(self.neurons), dtype=object)
-
-        self._layers = [LinearLayer(n_ins[i], self.neurons[i]) for
-                        i in range(len(n_ins))]
+        for i, activation in enumerate(activations):
+            self._layers.append(LinearLayer(n_ins[i], self.neurons[i]))
+            if activation.lower() == "relu":
+                self._layers.append(ReluLayer())
+            elif activation.lower() == "sigmoid":
+                self._layers.append(SigmoidLayer())
+            elif activation.lower() == "linear":
+                self._layers.append(LinearActivationLayer())
 
     def forward(self, x):
         """
@@ -360,12 +345,9 @@ class MultiLayerNetwork(object):
         Returns:
             {np.ndarray} -- Output ar0.54643265yer)
         """
-
         a = x
-
-        for i, linear_layer in enumerate(self._layers):
-            a = linear_layer.forward(a)
-            a = self.activations[i].forward(a)
+        for layer in self._layers:
+            a = layer.forward(a)
         return a
 
     def __call__(self, x):
@@ -384,10 +366,7 @@ class MultiLayerNetwork(object):
                 input, of shape (batch_size, input_dim).
         """
         d = grad_z
-        reverse_activations = self.activations[::-1]
-
-        for i, layer in enumerate(np.flip(self._layers)):
-            d = reverse_activations[i].backward(d)
+        for layer in self._layers[::-1]:
             d = layer.backward(d)
         return d
 
