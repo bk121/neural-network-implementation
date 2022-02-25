@@ -202,16 +202,18 @@ class ReluLayer(Layer):
 
         return grad_z * result
 
+
 class LinearActivationLayer(object):
     def __init__(self):
         self._cache_current = None
-    
+
     def forward(self, x):
         self._cache_current = x
         return self._cache_current
-    
+
     def backward(self, grad_z):
         return grad_z
+
 
 class LinearLayer(Layer):
     """
@@ -514,7 +516,7 @@ class Trainer(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        for j in range(self.nb_epoch):
+        for epoch in range(self.nb_epoch):
             input_data, target_data = self.shuffle(
                 input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
             number_of_splits = np.shape(input_data)[0] / self.batch_size
@@ -528,11 +530,11 @@ class Trainer(object):
                     predictions, split_target_dataset[i])
 
                 grad_z = self._loss_layer.backward()
-                grad_z = self.network.backward(grad_z)
+                self.network.backward(grad_z)
                 self.network.update_params(self.learning_rate)
 
-            if(j % 100 == 0):
-                print("Epoch: ", j, "Error: ", error)
+            if(epoch % 100 == 0):
+                print("Epoch: ", epoch, "Error: ", error)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
