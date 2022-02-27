@@ -566,8 +566,8 @@ class Preprocessor(object):
         # Scale smallest value to a and largest value to b: for example [a,b] = [0,1]
         self._lower_range = 0
         self._upper_range = 1
-        self._X_min = np.amin(data)
-        self._X_max = np.amax(data)
+        self._X_min = np.amin(data, axis=0)
+        self._X_max = np.amax(data, axis=0)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -586,11 +586,11 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        normalised_data = self._lower_range + \
-            ((data - self._X_min)) * (self._upper_range - self._lower_range) / \
-            (self._X_max - self._X_min)
-
+        normalised_data = self._lower_range + ((data - self._X_min)) * (
+            self._upper_range - self._lower_range) / (self._X_max - self._X_min)
+        
         return normalised_data
+
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -609,6 +609,12 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+
+        # data = data * (self._max - self._min)
+        # data = data + self._min
+
+        # return data
+
         reverted_data = (data * (self._X_max - self._X_min) -
                          self._lower_range) / (self._upper_range - self._lower_range) + self._X_min
 
@@ -649,6 +655,12 @@ def example_main():
 
     x_train_pre = prep_input.apply(x_train)
     x_val_pre = prep_input.apply(x_val)
+
+    print(x_train)
+    print(x_train_pre)
+    print(prep_input.revert(x_train_pre) - x_train)
+
+
 
     # predictions = net.forward(x_train_pre)
     # cll = CrossEntropyLossLayer()
