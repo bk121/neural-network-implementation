@@ -656,11 +656,9 @@ def example_main():
     x_train_pre = prep_input.apply(x_train)
     x_val_pre = prep_input.apply(x_val)
 
-    print(x_train)
-    print(x_train_pre)
-    print(prep_input.revert(x_train_pre) - x_train)
-
-
+    # print(x_train)
+    # print(x_train_pre)
+    # print(prep_input.revert(x_train_pre) - x_train)
 
     # predictions = net.forward(x_train_pre)
     # cll = CrossEntropyLossLayer()
