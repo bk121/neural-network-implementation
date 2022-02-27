@@ -2,6 +2,7 @@ from matplotlib.pyplot import step
 import numpy as np
 import pickle
 from pyrsistent import b
+import sys
 
 
 def xavier_init(size, gain=1.0):
@@ -76,7 +77,7 @@ class MSELossLayer(Layer):
 
 class CrossEntropyLossLayer(Layer):
     """
-    CrossEntropyLossLayer: Computes the softmax followed by the negative 
+    CrossEntropyLossLayer: Computes the softmax followed by the negative
     log-likelihood loss.
     """
 
@@ -109,13 +110,13 @@ class SigmoidLayer(Layer):
     """
 
     def __init__(self):
-        """ 
+        """
         Constructor of the Sigmoid layer.
         """
         self._cache_current = None
 
     def forward(self, x):
-        """ 
+        """
         Performs forward pass through the Sigmoid layer.
 
         Logs information needed to compute gradient at a later stage in
@@ -159,7 +160,7 @@ class ReluLayer(Layer):
         self._cache_current = None
 
     def forward(self, x):
-        """ 
+        """
         Performs forward pass through the Relu layer.
 
         Logs information needed to compute gradient at a later stage in
@@ -202,7 +203,7 @@ class ReluLayer(Layer):
         return grad_z * result
 
 
-class LinearActivationLayer(object):
+class LinearActivationLayer(Layer):
     def __init__(self):
         self._cache_current = None
 
@@ -314,12 +315,12 @@ class MultiLayerNetwork(object):
         Constructor of the multi layer network.
 
         Arguments:
-            - input_dim {int} -- Number of features in the input (excluding 
+            - input_dim {int} -- Number of features in the input (excluding
                 the batch dimension).
-                        - neurons {list} -- Number of neurons in each linear layer 
-                represented as a list. The length of the list determines the 
+                        - neurons {list} -- Number of neurons in each linear layer
+                represented as a list. The length of the list determines the
                 number of linear layers.
-            - activations {list} -- List of the activation functions to apply 
+            - activations {list} -- List of the activation functions to apply
                 to the output of each linear layer.
         """
         self.input_dim = input_dim
@@ -359,7 +360,7 @@ class MultiLayerNetwork(object):
 
         Arguments:
             grad_z {np.ndarray} -- Gradient array of shape (batch_size,
-                #_neurons_in_final_layer).
+                # _neurons_in_final_layer).
 
         Returns:
             {np.ndarray} -- Array containing gradient with repect to layer
@@ -442,7 +443,7 @@ class Trainer(object):
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    @staticmethod
+    @ staticmethod
     def shuffle(input_dataset, target_dataset):
         """
         Returns shuffled versions of the inputs.
@@ -453,7 +454,7 @@ class Trainer(object):
             - target_dataset {np.ndarray} -- Array of corresponding targets, of
                 shape (#_data_points, #output_neurons).
 
-        Returns: 
+        Returns:
             - {np.ndarray} -- shuffled inputs.
             - {np.ndarray} -- shuffled_targets.
         """
@@ -494,7 +495,6 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-
         for epoch in range(self.nb_epoch):
             input_data, target_data = self.shuffle(
                 input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)

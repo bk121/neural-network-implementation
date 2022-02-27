@@ -1,16 +1,20 @@
+import random
+from tkinter.tix import Y_REGION
+from pytest import skip
 import torch
 import pickle
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelBinarizer, OneHotEncoder
+from sklearn.preprocessing import LabelBinarizer
 import part1_nn_lib as nn
+from sklearn.metrics import mean_squared_error
 
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch=10000,
-                 neurons=[16, 1],
-                 activations=["sigmoid", "sigmoid"]):
+    def __init__(self, x, nb_epoch=30000,
+                 neurons=[150, 150, 150, 1],
+                 activations=["relu", "relu", "relu", "relu"]):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -23,8 +27,8 @@ class Regressor():
             - nb_epoch {int} -- number of epoch to train the network.
 
         """
-        #X, _ = self._preprocessor(x, training=True)
-        self.input_size = x.shape[1]
+        # NOT VERY SMOOTH, ACCOUNT FOR ONE_HOTS
+        self.input_size = x.shape[1] + 4
         self.output_size = 1
         self.nb_epoch = nb_epoch
         self.net = nn.MultiLayerNetwork(self.input_size, neurons, activations)
@@ -48,36 +52,47 @@ class Regressor():
               size (batch_size, 1).
 
         """
-
+        # SET UP ONE_HOT MAKER
         if training:
             self._lb = LabelBinarizer()
             self._lb.fit(x["ocean_proximity"])
-            for column in x:
-                self.min_x = x.min(skipna=True)
-                self.max_x = x.max(skipna=True)
-                self.mean_x = x.mean(skipna=True, numeric_only=True)
 
+        # FIX TEXT ENTRIES AND
         X = x.copy()  # Copy the dataframe
-        X.fillna(self.mean_x)  # Not sure if this is correct default
-
+        # Not sure if this is correct default
+        X.fillna(random.uniform(0, 1), inplace=True)
         one_hots = self._lb.transform(
             X["ocean_proximity"])  # Form one-hot vectors
-        # Make it so the column can take lists
-        X.astype({"ocean_proximity": "object"})
-        for i, one_hot in zip(X.index, one_hots):
-            # one_hot  # needs to take lists in NN model
-            # one_hot # Replace words with vectors FIX
-            X.at[i, "ocean_proximity"] = 0.5
+        X = X.drop(labels="ocean_proximity", axis=1)
 
+        # STORE PARAMS FOR NORMALISATION
+        if training:
+            for column in X:
+                self.min_x = X.min(skipna=True)
+                self.max_x = X.max(skipna=True)
+
+        # NORMALISATION - MAYBE WE CAN USE PART 1 HERE - THIS MUST BE SPED UP
+        for i in X.index:
             for column, mi, ma in zip(X, self.min_x, self.max_x):
-                if column != "ocean_proximity":  # Don't normalise word one
-                    X.at[i, column] = (X.at[i, column]-mi) / \
-                        (ma-mi)  # Min/max normalisation
+                # Min/max normalisation
+                X.at[i, column] = (X.at[i, column]-mi) / (ma-mi)
 
-        return X, (y if isinstance(y, pd.DataFrame) else None)
+        X_numpy = X.copy().to_numpy().astype(float)
+        X_numpy = np.concatenate((X_numpy, one_hots), axis=1)
+
+        Y_numpy = None
+        if isinstance(y, pd.DataFrame):
+            Y_numpy = y.copy().to_numpy().astype(float)
+            if training:
+                self.min_y = np.amin(Y_numpy)
+                self.max_y = np.amax(Y_numpy)
+            Y_numpy = (Y_numpy-self.min_y)/(self.max_y -
+                                            self.min_y)  # DO WE NORMALISE Y?
+
+        return X_numpy, Y_numpy
 
     def fit(self, x, y,
-            batch_size=8,
+            batch_size=8000,
             learning_rate=0.01,
             loss_fun="mse",
             shuffle_flag=False):
@@ -102,9 +117,7 @@ class Regressor():
             loss_fun=loss_fun,
             shuffle_flag=shuffle_flag
         )
-        X_numpy = X.copy().to_numpy().astype(float)
-        Y_numpy = Y.copy().to_numpy().astype(float)
-        trainer.train(X_numpy, Y_numpy)
+        trainer.train(X, Y)
         return self
 
     def predict(self, x):
@@ -120,8 +133,7 @@ class Regressor():
 
         """
         X, _ = self._preprocessor(x, training=False)  # Do not forget
-        X_numpy = X.copy().to_numpy()
-        return self.net(X_numpy).argmax(axis=1).squeeze()
+        return self.net(X)
 
     def score(self, x, y):
         """
@@ -136,11 +148,10 @@ class Regressor():
             {float} -- Quantification of the efficiency of the model.
 
         """
-        preds = self.predict(x)
-        targets = y.to_numpy().astype(float).argmax(axis=1).squeeze()
-        accuracy = (preds == targets).mean()
-        print("Validation accuracy: {}".format(accuracy))
-        return 0
+        _, Y = self._preprocessor(x, y=y, training=False)  # Do not forget
+        predictions = self.predict(x)
+        print('preds:', predictions, '\ntruths:', Y)
+        return mean_squared_error(Y, predictions)
 
 
 def save_regressor(trained_model):
@@ -213,7 +224,7 @@ def example_main():
     # This example trains on the whole available dataset.
     # You probably want to separate some held-out data
     # to make sure the model isn't overfitting
-    regressor = Regressor(x_train, nb_epoch=10000)
+    regressor = Regressor(x_train)
     regressor.fit(x_train, y_train)
     save_regressor(regressor)
 
