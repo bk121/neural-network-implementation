@@ -8,11 +8,12 @@ import pandas as pd
 from sklearn.preprocessing import LabelBinarizer
 import part1_nn_lib as nn
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import GridSearchCV
 
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch=30000,
+    def __init__(self, x, nb_epoch=2500,
                  neurons=[150, 150, 150, 1],
                  activations=["relu", "relu", "relu", "relu"]):
         # You can add any input parameters you need
@@ -177,7 +178,7 @@ def load_regressor():
     return trained_model
 
 
-def RegressorHyperParameterSearch():
+def RegressorHyperParameterSearch(model, x_train, y_train, x_test, y_test):
     # Ensure to add whatever inputs you deem necessary to this function
     """
     Performs a hyper-parameter for fine-tuning the regressor implemented
@@ -194,8 +195,6 @@ def RegressorHyperParameterSearch():
     #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
-
-    return  # Return the chosen hyper parameters
 
     #######################################################################
     #                       ** END OF YOUR CODE **
@@ -226,10 +225,11 @@ def example_main():
     # This example trains on the whole available dataset.
     # You probably want to separate some held-out data
     # to make sure the model isn't overfitting
-    regressor = Regressor(x_train)
-    regressor.fit(x_train, y_train)
-    save_regressor(regressor)
-
+    # regressor = Regressor(x_train)
+    # regressor.fit(x_train, y_train)
+    # save_regressor(regressor)
+    regressor = load_regressor()
+    param_results = RegressorHyperParameterSearch(regressor, x_train, y_train, x_val, y_val)
     # Error
     error = regressor.score(x_val, y_val)
     print("\nRegressor error: {}\n".format(error))

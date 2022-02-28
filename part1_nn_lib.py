@@ -586,9 +586,9 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        normalised_data = self._lower_range + ((data - self._X_min)) * (
-            self._upper_range - self._lower_range) / (self._X_max - self._X_min)
-        
+        normalised_data = self._lower_range + ((data - self._X_min) * (
+            self._upper_range - self._lower_range)) / (self._X_max - self._X_min)
+
         return normalised_data
 
 
