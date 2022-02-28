@@ -65,19 +65,21 @@ class Regressor():
             X["ocean_proximity"])  # Form one-hot vectors
         X = X.drop(labels="ocean_proximity", axis=1)
 
-        # STORE PARAMS FOR NORMALISATION
-        if training:
-            for column in X:
-                self.min_x = X.min(skipna=True)
-                self.max_x = X.max(skipna=True)
+        # # STORE PARAMS FOR NORMALISATION
+        # if training:
+        #     for column in X:
+        #         self.min_x = X.min(skipna=True)
+        #         self.max_x = X.max(skipna=True)        
 
-        # NORMALISATION - MAYBE WE CAN USE PART 1 HERE - THIS MUST BE SPED UP
-        for i in X.index:
-            for column, mi, ma in zip(X, self.min_x, self.max_x):
-                # Min/max normalisation
-                X.at[i, column] = (X.at[i, column]-mi) / (ma-mi)
+        # # NORMALISATION - MAYBE WE CAN USE PART 1 HERE - THIS MUST BE SPED UP
+        # for i in X.index:
+        #     for column, mi, ma in zip(X, self.min_x, self.max_x):
+        #         # Min/max normalisation
+        #         X.at[i, column] = (X.at[i, column]-mi) / (ma-mi)
 
-        X_numpy = X.copy().to_numpy().astype(float)
+        # FASTER NORMALISATION METHOD
+        X_norm = (X-X.min(skipna=True))/(X.max(skipna=True)-X.min(skipna=True))
+        X_numpy = X_norm.copy().to_numpy().astype(float)
         X_numpy = np.concatenate((X_numpy, one_hots), axis=1)
 
         Y_numpy = None
