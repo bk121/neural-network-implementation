@@ -166,7 +166,7 @@ def load_regressor():
     return trained_model
 
 
-def RegressorHyperParameterSearch(model, x_train, y_train, x_test, y_test):
+def RegressorHyperParameterSearch()):
     # Ensure to add whatever inputs you deem necessary to this function
     """
     Performs a hyper-parameter for fine-tuning the regressor implemented
