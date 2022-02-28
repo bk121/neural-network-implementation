@@ -66,19 +66,7 @@ class Regressor():
             X["ocean_proximity"])  # Form one-hot vectors
         X = X.drop(labels="ocean_proximity", axis=1)
 
-        # # STORE PARAMS FOR NORMALISATION
-        # if training:
-        #     for column in X:
-        #         self.min_x = X.min(skipna=True)
-        #         self.max_x = X.max(skipna=True)        
-
-        # # NORMALISATION - MAYBE WE CAN USE PART 1 HERE - THIS MUST BE SPED UP
-        # for i in X.index:
-        #     for column, mi, ma in zip(X, self.min_x, self.max_x):
-        #         # Min/max normalisation
-        #         X.at[i, column] = (X.at[i, column]-mi) / (ma-mi)
-
-        # FASTER NORMALISATION METHOD
+        # NO-LOOP NORMALISATION METHOD
         X_norm = (X-X.min(skipna=True))/(X.max(skipna=True)-X.min(skipna=True))
         X_numpy = X_norm.copy().to_numpy().astype(float)
         X_numpy = np.concatenate((X_numpy, one_hots), axis=1)
@@ -225,11 +213,11 @@ def example_main():
     # This example trains on the whole available dataset.
     # You probably want to separate some held-out data
     # to make sure the model isn't overfitting
-    # regressor = Regressor(x_train)
-    # regressor.fit(x_train, y_train)
-    # save_regressor(regressor)
-    regressor = load_regressor()
-    param_results = RegressorHyperParameterSearch(regressor, x_train, y_train, x_val, y_val)
+    regressor = Regressor(x_train)
+    regressor.fit(x_train, y_train)
+    save_regressor(regressor)
+    # regressor = load_regressor()
+    
     # Error
     error = regressor.score(x_val, y_val)
     print("\nRegressor error: {}\n".format(error))
