@@ -1,6 +1,6 @@
 import random
 # from tkinter.tix import Y_REGION
-from pytest import skip
+# from pytest import skip
 import torch
 import inspect
 import pickle

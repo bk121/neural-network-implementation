@@ -2,6 +2,7 @@ from matplotlib.pyplot import step
 import numpy as np
 import pickle
 from pyrsistent import b
+from part2_house_value_regression import *
 import sys
 
 
@@ -249,9 +250,6 @@ class LinearLayer(Layer):
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
         self._cache_current = x
-        # print(np.shape(x))
-        # print(np.shape(self._W))
-        # print(np.shape(self._b))
         return ((x @ self._W) + self._b)
 
     def backward(self, grad_z):
@@ -335,10 +333,10 @@ class MultiLayerNetwork(object):
             # Implementing dropout
             # if i % 2 == 1:
             #     binary_values = np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)
-            #     a = layer.forward(a) * binary_values
-            #     a /= (1 - self._dropout_rate)
+            # #     a = layer.forward(a) * binary_values
+            # #     a /= (1 - self._dropout_rate)
             # else:
-                a = layer.forward(a)
+            a = layer.forward(a)
         return a
 
     def __call__(self, x):
