@@ -500,7 +500,7 @@ class Trainer(object):
                 self.network.backward(grad_z)
                 self.network.update_params(self.learning_rate)
 
-            if(epoch % 100 == 0):
+            if(epoch % 10 == 0):
                 print("Epoch: ", epoch, "Error: ", error)
 
         #######################################################################
