@@ -283,16 +283,8 @@ class LinearLayer(Layer):
         Arguments:
             learning_rate {float} -- Learning rate of update step.
         """
-        temp = self._W
         self._W = self._W - learning_rate*self._grad_W_current
         self._b = self._b - learning_rate*self._grad_b_current
-        lhs = self._grad_W_current
-        rhs = (temp - self._W) / learning_rate
-        result = np.round(lhs - rhs, 2)
-        if (result > abs(0.0001)).any():
-            print("Check failed")
-        # else:
-        #     print(lhs)
 
 
 class MultiLayerNetwork(object):

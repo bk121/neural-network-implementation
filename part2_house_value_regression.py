@@ -296,7 +296,7 @@ def RegressorHyperParameterSearch(x_train, y_train, x_test, y_test):
     x = [x_train]
     neurons = [[5, 20, 20, 1]]
     learning_rate = [0.01, 0.1]
-    nb_epoch = [5]
+    nb_epoch = [5, 25, 100]
     batch_size = [5]
     dropout_rate = [0.0]
 
