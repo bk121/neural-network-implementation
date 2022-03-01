@@ -17,7 +17,7 @@ class Regressor():
 
     def __init__(self, x, nb_epoch=500,
                  neurons=[150, 150, 150, 1],
-                 activations=["relu", "relu", "relu", "linear"], batch_size=8, dropout_rate=0.00, learning_rate=0.01, loss_fun="mse"):
+                 activations=["relu", "relu", "relu", "linear"], batch_size=8000, dropout_rate=0.00, learning_rate=0.1, loss_fun="mse"):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -65,7 +65,7 @@ class Regressor():
         # SET UP ONE_HOT MAKER
         if training:
             self._lb = LabelBinarizer()
-            self._lb.fit(x["ocean_proximity"])
+            self._lb.fit(['<1H OCEAN', 'INLAND', 'NEAR BAY', 'NEAR OCEAN', 'ISLAND'])
 
         # FIX TEXT ENTRIES AND
         X = x.copy()  # Copy the dataframe
@@ -79,6 +79,7 @@ class Regressor():
         X_norm = (X-X.min(skipna=True))/(X.max(skipna=True)-X.min(skipna=True))
         X_numpy = X_norm.copy().to_numpy().astype(float)
         X_numpy = np.concatenate((X_numpy, one_hots), axis=1)
+        
 
         Y_numpy = None
         if isinstance(y, pd.DataFrame):
@@ -104,6 +105,7 @@ class Regressor():
             self {Regressor} -- Trained model.
 
         """
+
         X, Y = self._preprocessor(x, y=y, training=True)  # Do not forget
         trainer = nn.Trainer(
             network=self.net,
@@ -284,12 +286,19 @@ def RegressorHyperParameterSearch(x_train, y_train, x_test, y_test):
     #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
+    # x = [x_train]
+    # neurons = [[5, 20, 20], [5, 10, 20], [10, 50, 50]]
+    # learning_rate = [0.001, 0.01, 0.1]
+    # nb_epoch = [50, 500, 2500]
+    # batch_size = [5, 20, 50]
+    # dropout_rate = [0.0, 0.3, 0.4, 0.5]
+    
     x = [x_train]
-    neurons = [[5, 20, 20], [5, 10, 20], [10, 50, 50]]
-    learning_rate = [0.001, 0.01, 0.1]
-    nb_epoch = [50, 500, 2500]
-    batch_size = [5, 20, 50]
-    dropout_rate = [0.0, 0.3, 0.4, 0.5]
+    neurons = [[5, 20, 20, 1]]
+    learning_rate = [0.01, 0.1]
+    nb_epoch = [5]
+    batch_size = [5]
+    dropout_rate = [0.0]
 
     regressor = Regressor(x_train)
 
@@ -297,7 +306,7 @@ def RegressorHyperParameterSearch(x_train, y_train, x_test, y_test):
                 nb_epoch=nb_epoch, batch_size=batch_size, dropout_rate=dropout_rate, learning_rate=learning_rate)
 
     grid_search = GridSearchCV(estimator=regressor, param_grid=grid,
-                               scoring=["neg_mean_squared_error"], refit="neg_mean_squared_error", cv=5, verbose=4)
+                               scoring=["neg_mean_squared_error"], refit="neg_mean_squared_error", cv=2, verbose=4, error_score="raise")
 
     result = grid_search.fit(x_train, y_train)
 
@@ -340,8 +349,11 @@ def example_main():
 
     # Error
     # error = regressor.score(x_val, y_val)
-    print("\nRegressor error: {}\n".format(error))
+    # print("\nRegressor error: {}\n".format(error))
+    # rhs_zero_point_zero_one = abs(-56016414055.705 -55899521116.989)
+    # lhs_zero_point_one = abs(-56016429457.618 -55899518780.060)
 
+    # print(rhs_zero_point_zero_one < lhs_zero_point_one)
 
 if __name__ == "__main__":
     example_main()

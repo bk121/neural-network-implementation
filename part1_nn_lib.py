@@ -249,7 +249,9 @@ class LinearLayer(Layer):
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
         self._cache_current = x
-
+        # print(np.shape(x))
+        # print(np.shape(self._W))
+        # print(np.shape(self._b))
         return ((x @ self._W) + self._b)
 
     def backward(self, grad_z):
