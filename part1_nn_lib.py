@@ -22,14 +22,6 @@ def xavier_init(size, gain=1.0):
 
     return np.random.uniform(low=low, high=high, size=size)
 
-# def he_init(size):
-
-#     weight_range = np.sqrt(2.0 / size[0])
-#     random_numbers = np.random.rand(size[0], size[1])
-
-#     return random_numbers * weight_range
-
-
 class Layer:
     """
     Abstract layer class.
@@ -197,9 +189,6 @@ class ReluLayer(Layer):
         # Standard RELU implementation
         result = self._cache_current[self._cache_current > 0] = 1
 
-        # Leaky Relu implementation
-        # result = np.where(self._cache_current > 0, 1, 0.00)
-
         return grad_z * result
 
 
@@ -310,7 +299,7 @@ class MultiLayerNetwork(object):
     activation functions.
     """
 
-    def __init__(self, input_dim, neurons, activations):
+    def __init__(self, input_dim, neurons, activations, dropout_rate=0.00):
         """
         Constructor of the multi layer network.
 
@@ -326,6 +315,7 @@ class MultiLayerNetwork(object):
         self.input_dim = input_dim
         self.neurons = neurons
         self._layers = []
+        self._dropout_rate = dropout_rate
         n_ins = [input_dim] + neurons[:-1]
         for i, activation in enumerate(activations):
             self._layers.append(LinearLayer(n_ins[i], self.neurons[i]))
@@ -347,8 +337,14 @@ class MultiLayerNetwork(object):
             {np.ndarray} -- Output ar0.54643265yer)
         """
         a = x
-        for layer in self._layers:
-            a = layer.forward(a)
+        for i, layer in enumerate(self._layers):
+            # Implementing dropout
+            if i % 2 == 1:
+                binary_values = np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)
+                a = layer.forward(a) * binary_values
+                a /= (1 - self._dropout_rate)
+            else:
+                a = layer.forward(a)
         return a
 
     def __call__(self, x):
@@ -591,7 +587,6 @@ class Preprocessor(object):
 
         return normalised_data
 
-
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -609,12 +604,6 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-
-        # data = data * (self._max - self._min)
-        # data = data + self._min
-
-        # return data
-
         reverted_data = (data * (self._X_max - self._X_min) -
                          self._lower_range) / (self._upper_range - self._lower_range) + self._X_min
 
