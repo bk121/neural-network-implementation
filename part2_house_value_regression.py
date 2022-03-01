@@ -41,7 +41,7 @@ class Regressor(BaseEstimator):
         self.batch_size = batch_size
         self.dropout_rate = dropout_rate
         self.learning_rate = learning_rate
-        self.loss_fun = "mse"
+        self.loss_fun = loss_fun
         self.net = nn.MultiLayerNetwork(self.input_size, neurons, activations)
         return
 
@@ -246,12 +246,12 @@ def example_main():
     # This example trains on the whole available dataset.
     # You probably want to separate some held-out data
     # to make sure the model isn't overfitting
-    # regressor = Regressor(x_train)
-    # regressor.fit(x_train, y_train)
-    # save_regressor(regressor)
+    regressor = Regressor(x_train)
+    regressor.fit(x_train, y_train)
+    save_regressor(regressor)
     # regressor = load_regressor()
 
-    print(RegressorHyperParameterSearch(x_train, y_train, x_val, y_val))
+    # print(RegressorHyperParameterSearch(x_train, y_train, x_val, y_val))
 
     # Error
     # error = regressor.score(x_val, y_val)
