@@ -330,11 +330,10 @@ class MultiLayerNetwork(object):
         for i, layer in enumerate(self._layers):
             # Implementing dropout
             if i % 2 == 1:
-                binary_values = np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)
+                # binary_values = np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)
                 a = layer.forward(a)
-                b = a * binary_values
-                print((a == b).all())
-                a /= (1 - self._dropout_rate)
+                # b = a * binary_values
+                # a /= (1 - self._dropout_rate)
             else:
                 a = layer.forward(a)
         return a
