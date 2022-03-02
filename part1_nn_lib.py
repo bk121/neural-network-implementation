@@ -327,10 +327,12 @@ class MultiLayerNetwork(object):
             {np.ndarray} -- Output ar0.54643265yer)
         """
         a = x
+
         for i, layer in enumerate(self._layers):
+            # print(layer)
             # Implementing dropout
             if i % 2 == 1:
-                # binary_values = np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)
+                binary_values = np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)
                 a = layer.forward(a)
                 # b = a * binary_values
                 # a /= (1 - self._dropout_rate)
