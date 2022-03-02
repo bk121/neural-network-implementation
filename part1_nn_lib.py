@@ -429,7 +429,7 @@ class Trainer(object):
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    @ staticmethod
+    @staticmethod
     def shuffle(input_dataset, target_dataset):
         """
         Returns shuffled versions of the inputs.
@@ -484,7 +484,7 @@ class Trainer(object):
         for epoch in range(self.nb_epoch):
             input_data, target_data = self.shuffle(
                 input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
-            number_of_splits = np.shape(input_data)[0] / self.batch_size
+            number_of_splits = max(np.shape(input_data)[0] / self.batch_size, 1)
             split_input_dataset = np.array_split(input_data, number_of_splits)
             split_target_dataset = np.array_split(
                 target_data, number_of_splits)
