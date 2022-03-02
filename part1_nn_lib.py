@@ -259,7 +259,7 @@ class LinearLayer(Layer):
         computes gradients of loss with respect to parameters of layer and
         inputs of layer).
 
-        Arguments:
+        Arguments: 
             grad_z {np.ndarray} -- Gradient array of shape (batch_size, n_out).
 
         Returns:
@@ -268,8 +268,6 @@ class LinearLayer(Layer):
         """
         self._grad_W_current = self._cache_current.T@grad_z
         self._grad_b_current = np.ones((len(grad_z), 1)).T@grad_z
-        if (np.isnan(grad_z)).all():
-            quit()
 
         return grad_z@self._W.T
 
@@ -281,8 +279,8 @@ class LinearLayer(Layer):
         Arguments:
             learning_rate {float} -- Learning rate of update step.
         """
-        self._W = self._W - learning_rate*self._grad_W_current
-        self._b = self._b - learning_rate*self._grad_b_current
+        self._W = np.clip(self._W - learning_rate*self._grad_W_current, -1000, 1000)
+        self._b = np.clip(self._b - learning_rate*self._grad_b_current, -1000, 1000)
 
 
 class MultiLayerNetwork(object):

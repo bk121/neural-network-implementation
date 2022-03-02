@@ -16,9 +16,9 @@ from collections import defaultdict
 
 class Regressor(BaseEstimator):
 
-    def __init__(self, x, nb_epoch=500,
-                 neurons=[150, 150, 150, 1],
-                 activations=["relu", "relu", "relu", "linear"], batch_size=8000, dropout_rate=0.00, learning_rate=0.1, loss_fun="mse"):
+    def __init__(self, x, nb_epoch=200,
+                 neurons=[150, 150, 150, 150, 150, 150, 150, 1],
+                 activations=["relu", "relu", "relu", "relu", "relu", "relu", "relu", "linear"], batch_size=8000, dropout_rate=0.00, learning_rate=0.08, loss_fun="mse"):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -132,7 +132,7 @@ class Regressor(BaseEstimator):
 
         """
         X, _ = self._preprocessor(x, training=False)  # Do not forget
-        return self.net(X)
+        return self.net(X) * (self.max_y - self.min_y) + self.min_y
 
     def score(self, x, y):
         """
@@ -150,7 +150,7 @@ class Regressor(BaseEstimator):
         _, Y = self._preprocessor(x, y=y, training=False)  # Do not forget
         predictions = self.predict(x)
         print('preds:', predictions, '\ntruths:', Y)
-        return mean_squared_error(Y, predictions)
+        return np.sqrt(mean_squared_error(y.to_numpy(), predictions))
 
 
 
@@ -254,12 +254,8 @@ def example_main():
     # print(RegressorHyperParameterSearch(x_train, y_train, x_val, y_val))
 
     # Error
-    # error = regressor.score(x_val, y_val)
-    # print("\nRegressor error: {}\n".format(error))
-    # rhs_zero_point_zero_one = abs(-56016414055.705 -55899521116.989)
-    # lhs_zero_point_one = abs(-56016429457.618 -55899518780.060)
-
-    # print(rhs_zero_point_zero_one < lhs_zero_point_one)
+    error = regressor.score(x_val, y_val)
+    print("\nRegressor error: {}\n".format(error))
 
 if __name__ == "__main__":
     example_main()
