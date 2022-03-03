@@ -153,7 +153,6 @@ class Regressor(BaseEstimator):
         """
         _, Y = self._preprocessor(x, y=y, training=False)  # Do not forget
         predictions = self.predict(x)
-        print('preds:', predictions, '\ntruths:', Y)
         return np.sqrt(mean_squared_error(y.to_numpy(), predictions))
 
 

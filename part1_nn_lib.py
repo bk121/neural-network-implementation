@@ -508,6 +508,7 @@ class Trainer(object):
                     error_dev = self._loss_layer.forward(
                         predictions_dev, y_dev)
                     if error_dev > last_error_dev:
+                        print("Error stabilised in development set.\nStopping...")
                         break
                     last_error_dev = error_dev
 
