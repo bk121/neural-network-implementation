@@ -20,7 +20,7 @@ class Regressor(BaseEstimator):
     def __init__(
         self,
         x,
-        nb_epoch=200,
+        nb_epoch=500,
         neurons=[150, 150, 150, 1],
         activations=["relu", "relu", "relu", "linear"],
         batch_size=500,
