@@ -356,7 +356,7 @@ class MultiLayerNetwork(object):
                 self._layers.append(ReluLayer())
             elif activation.lower() == "sigmoid":
                 self._layers.append(SigmoidLayer())
-            elif activation.lower() == "linear":
+            elif activation.lower() == "identiy":
                 self._layers.append(LinearActivationLayer())
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -769,7 +769,7 @@ def example_main():
         nb_epoch=10000,
         learning_rate=0.01,
         loss_fun="bce",
-        shuffle_flag=True,
+        shuffle_flag=False,
     )
 
     trainer.train(x_train_pre, y_train)
