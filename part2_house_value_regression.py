@@ -1,7 +1,9 @@
 import random
+
 # from tkinter.tix import Y_REGION
 # from pytest import skip
 import torch
+
 # import inspect
 import pickle
 import numpy as np
@@ -15,10 +17,17 @@ from collections import defaultdict
 
 
 class Regressor(BaseEstimator):
-
-    def __init__(self, x, nb_epoch=200,
-                 neurons=[150, 150, 150, 1],
-                 activations=["relu", "relu", "relu", "identity"], batch_size=500, dropout_rate=0.00, learning_rate=0.05, loss_fun="mse"):
+    def __init__(
+        self,
+        x,
+        nb_epoch=500,
+        neurons=[150, 150, 150, 1],
+        activations=["relu", "relu", "relu", "identity"],
+        batch_size=500,
+        dropout_rate=0.00,
+        learning_rate=0.05,
+        loss_fun="mse",
+    ):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -31,6 +40,9 @@ class Regressor(BaseEstimator):
             - nb_epoch {int} -- number of epoch to train the network.
 
         """
+        #######################################################################
+        #                       ** START OF YOUR CODE **
+        #######################################################################
         # NOT VERY SMOOTH, ACCOUNT FOR ONE_HOTS
         self.input_size = x.shape[1] + 4
         self.output_size = 1
@@ -44,6 +56,9 @@ class Regressor(BaseEstimator):
         self.loss_fun = loss_fun
         self.net = nn.MultiLayerNetwork(self.input_size, neurons, activations)
         return
+        #######################################################################
+        #                       ** END OF YOUR CODE **
+        #######################################################################
 
     def _preprocessor(self, x, y=None, training=False):
         """
@@ -63,24 +78,29 @@ class Regressor(BaseEstimator):
               size (batch_size, 1).
 
         """
+        #######################################################################
+        #                       ** START OF YOUR CODE **
+        #######################################################################
         # SET UP ONE_HOT MAKER
         if training:
             self._lb = LabelBinarizer()
-            self._lb.fit(['<1H OCEAN', 'INLAND', 'NEAR BAY', 'NEAR OCEAN', 'ISLAND'])
+            self._lb.fit(["<1H OCEAN", "INLAND", "NEAR BAY", "NEAR OCEAN", "ISLAND"])
 
         # FIX TEXT ENTRIES AND
         X = x.copy()  # Copy the dataframe
         # Not sure if this is correct default
         X.fillna(random.uniform(0, 1), inplace=True)
-        one_hots = self._lb.transform(
-            X["ocean_proximity"])  # Form one-hot vectors
+        one_hots = self._lb.transform(X["ocean_proximity"])  # Form one-hot vectors
         X = X.drop(labels="ocean_proximity", axis=1)
 
+        if training:
+            self.min_X = X.min(skipna=True)
+            self.max_X = X.max(skipna=True)
+
         # NO-LOOP NORMALISATION METHOD
-        X_norm = (X-X.min(skipna=True))/(X.max(skipna=True)-X.min(skipna=True))
+        X_norm = (X - self.min_X) / (self.max_X - self.min_X)
         X_numpy = X_norm.copy().to_numpy().astype(float)
         X_numpy = np.concatenate((X_numpy, one_hots), axis=1)
-        
 
         Y_numpy = None
         if isinstance(y, pd.DataFrame):
@@ -88,12 +108,14 @@ class Regressor(BaseEstimator):
             if training:
                 self.min_y = np.amin(Y_numpy)
                 self.max_y = np.amax(Y_numpy)
-            Y_numpy = (Y_numpy-self.min_y)/(self.max_y -
-                                            self.min_y)  # DO WE NORMALISE Y?
+            Y_numpy = (Y_numpy - self.min_y) / (self.max_y - self.min_y)
 
         return X_numpy, Y_numpy
+        #######################################################################
+        #                       ** END OF YOUR CODE **
+        #######################################################################
 
-    def fit(self, x, y):
+    def fit(self, x_train, y_train, x_dev=None, y_dev=None):
         """
         Regressor training function
 
@@ -106,18 +128,28 @@ class Regressor(BaseEstimator):
             self {Regressor} -- Trained model.
 
         """
-
-        X, Y = self._preprocessor(x, y=y, training=True)  # Do not forget
+        #######################################################################
+        #                       ** START OF YOUR CODE **
+        #######################################################################
+        X, Y = self._preprocessor(x_train, y=y_train, training=True)
+        X_dev = None
+        Y_dev = None
+        if type(x_dev) != type(None) and type(y_dev) != type(None):
+            X_dev, Y_dev = self._preprocessor(x_dev, y=y_dev, training=False)
         trainer = nn.Trainer(
             network=self.net,
             batch_size=self.batch_size,
             nb_epoch=self.nb_epoch,
             learning_rate=self.learning_rate,
             loss_fun=self.loss_fun,
-            shuffle_flag=False
+            shuffle_flag=True,
+            generate_plot_data=True,
         )
-        trainer.train(X, Y)
+        trainer.train(X, Y, X_dev, Y_dev, self.min_y, self.max_y)
         return self
+        #######################################################################
+        #                       ** END OF YOUR CODE **
+        #######################################################################
 
     def predict(self, x):
         """
@@ -131,10 +163,16 @@ class Regressor(BaseEstimator):
             {np.darray} -- Predicted value for the given input (batch_size, 1).
 
         """
+        #######################################################################
+        #                       ** START OF YOUR CODE **
+        #######################################################################
         X, _ = self._preprocessor(x, training=False)  # Do not forget
-        return self.net(X) * (self.max_y - self.min_y) + self.min_y
+        return self.net(X, training=False) * (self.max_y - self.min_y) + self.min_y
+        #######################################################################
+        #                       ** END OF YOUR CODE **
+        #######################################################################
 
-    def score(self, x, y):
+    def score(self, x, y, training=True):
         """
         Function to evaluate the model accuracy on a validation dataset.
 
@@ -147,11 +185,15 @@ class Regressor(BaseEstimator):
             {float} -- Quantification of the efficiency of the model.
 
         """
-        _, Y = self._preprocessor(x, y=y, training=False)  # Do not forget
-        predictions = self.predict(x)
-        print('preds:', predictions, '\ntruths:', Y)
+        #######################################################################
+        #                       ** START OF YOUR CODE **
+        #######################################################################
+        _, Y = self._preprocessor(x, y=y, training=training)  # Do not forget
+        predictions = self.predict(x, training=training)
         return np.sqrt(mean_squared_error(y.to_numpy(), predictions))
-
+        #######################################################################
+        #                       ** END OF YOUR CODE **
+        #######################################################################
 
 
 def save_regressor(trained_model):
@@ -159,7 +201,7 @@ def save_regressor(trained_model):
     Utility function to save the trained regressor model in part2_model.pickle.
     """
     # If you alter this, make sure it works in tandem with load_regressor
-    with open('part2_model.pickle', 'wb') as target:
+    with open("part2_model.pickle", "wb") as target:
         pickle.dump(trained_model, target)
     print("\nSaved model in part2_model.pickle\n")
 
@@ -169,13 +211,13 @@ def load_regressor():
     Utility function to load the trained regressor model in part2_model.pickle.
     """
     # If you alter this, make sure it works in tandem with save_regressor
-    with open('part2_model.pickle', 'rb') as target:
+    with open("part2_model.pickle", "rb") as target:
         trained_model = pickle.load(target)
     print("\nLoaded model in part2_model.pickle\n")
     return trained_model
 
 
-def RegressorHyperParameterSearch(x_train, y_train, x_test, y_test):
+def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test):
     # Ensure to add whatever inputs you deem necessary to this function
     """
     Performs a hyper-parameter for fine-tuning the regressor implemented
@@ -198,31 +240,33 @@ def RegressorHyperParameterSearch(x_train, y_train, x_test, y_test):
     # nb_epoch = [50, 500, 2500]
     # batch_size = [5, 20, 50]
     # dropout_rate = [0.0, 0.3, 0.4, 0.5]
-    
-    # x = [x_train]
-    # neurons = [[20, 20, 20, 1], [150, 150, 150, 1]]
-    # activations = [['relu', 'relu', 'relu', 'linear']]
-    # learning_rate = [0.01, 0.05, 0.1]
-    # nb_epoch = [25, 50, 200]
-    # batch_size = [50, 250, 500]
-    # dropout_rate = [0.0]
 
     x = [x_train]
-    neurons = [[20, 20, 20, 1], [150, 150, 150, 1]]
-    activations = [['relu', 'relu', 'relu', 'identity']]
-    learning_rate = [0.01, 0.05, 0.1]
-    nb_epoch = [25, 50, 200]
-    batch_size = [50, 250, 500]
+    neurons = [[5, 20, 20, 1]]
+    learning_rate = [0.01, 0.1]
+    nb_epoch = [5, 25, 100]
+    batch_size = [5]
     dropout_rate = [0.0]
-
 
     regressor = Regressor(x_train)
 
-    grid = dict(x=x, neurons=neurons, activations=activations,
-                nb_epoch=nb_epoch, batch_size=batch_size, dropout_rate=dropout_rate, learning_rate=learning_rate)
+    grid = dict(
+        x=x,
+        neurons=neurons,
+        nb_epoch=nb_epoch,
+        batch_size=batch_size,
+        dropout_rate=dropout_rate,
+        learning_rate=learning_rate,
+    )
 
-    grid_search = GridSearchCV(estimator=regressor, param_grid=grid,
-                               scoring=["neg_mean_squared_error"], refit="neg_mean_squared_error", verbose=4, error_score="raise")
+    grid_search = GridSearchCV(
+        estimator=regressor,
+        param_grid=grid,
+        scoring=["neg_mean_squared_error"],
+        refit="neg_mean_squared_error",
+        verbose=4,
+        error_score="raise",
+    )
 
     result = grid_search.fit(x_train, y_train)
 
@@ -236,36 +280,34 @@ def example_main():
 
     output_label = "median_house_value"
 
-    # Use pandas to read CSV data as it contains various object types
-    # Feel free to use another CSV reader tool
-    # But remember that LabTS tests take Pandas Dataframe as inputs
     data = pd.read_csv("housing.csv")
 
     # Spliting input and output
     x = data.loc[:, data.columns != output_label]
     y = data.loc[:, [output_label]]
 
-    split_idx = int(0.8 * len(x))
+    split_idx1 = int(0.6 * len(x))
+    split_idx2 = int(0.8 * len(x))
 
-    x_train = x.iloc[:split_idx]
-    y_train = y.iloc[:split_idx]
-    x_val = x.iloc[split_idx:]
-    y_val = y.iloc[split_idx:]
+    x_train = x.iloc[:split_idx1]
+    y_train = y.iloc[:split_idx1]
+    x_dev = x.iloc[split_idx1:split_idx2]
+    y_dev = y.iloc[split_idx1:split_idx2]
+    x_test = x.iloc[split_idx2:]
+    y_test = y.iloc[split_idx2:]
 
     # Training
-    # This example trains on the whole available dataset.
-    # You probably want to separate some held-out data
-    # to make sure the model isn't overfitting
-    # regressor = Regressor(x_train)
-    # regressor.fit(x_train, y_train)
-    # save_regressor(regressor)
-    # regressor = load_regressor()
+    regressor = Regressor(x_train)
+    regressor.fit(x_train, y_train, x_dev, y_dev)
+    save_regressor(regressor)
 
-    print(RegressorHyperParameterSearch(x_train, y_train, x_val, y_val))
+    # Loading
+    regressor = load_regressor()
 
     # Error
-    # error = regressor.score(x_val, y_val)
-    # print("\nRegressor error: {}\n".format(error))
+    error = regressor.score(x_test, y_test, training=False)
+    print("\nRegressor error: {}\n".format(error))
+
 
 if __name__ == "__main__":
     example_main()

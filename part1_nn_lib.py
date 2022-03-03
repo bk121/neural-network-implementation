@@ -317,8 +317,10 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._W = np.clip(self._W - learning_rate * self._grad_W_current, -1000, 1000)
-        self._b = np.clip(self._b - learning_rate * self._grad_b_current, -1000, 1000)
+        self._W = np.clip(self._W - learning_rate *
+                          self._grad_W_current, -1000, 1000)
+        self._b = np.clip(self._b - learning_rate *
+                          self._grad_b_current, -1000, 1000)
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
@@ -330,7 +332,7 @@ class MultiLayerNetwork(object):
     activation functions.
     """
 
-    def __init__(self, input_dim, neurons, activations, dropout_rate=0.00, training=True):
+    def __init__(self, input_dim, neurons, activations, dropout_rate=0.00):
         """
         Constructor of the multi layer network.
 
@@ -350,7 +352,6 @@ class MultiLayerNetwork(object):
         self.neurons = neurons
         self._layers = []
         self._dropout_rate = dropout_rate
-        self._training = training
         n_ins = [input_dim] + neurons[:-1]
         for i, activation in enumerate(activations):
             self._layers.append(LinearLayer(n_ins[i], self.neurons[i]))
@@ -364,7 +365,7 @@ class MultiLayerNetwork(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-    def forward(self, x):
+    def forward(self, x, training=True):
         """
         Performs forward pass through the network.
 
@@ -380,11 +381,12 @@ class MultiLayerNetwork(object):
         a = x
         for i, layer in enumerate(self._layers):
             # Implementing dropout
-            if i % 2 == 1 and self._training:
-                    a = layer.forward(a)
-                    binary_values = (np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)).astype(int)
-                    a *= binary_values
-                    a /= (1 - self._dropout_rate)
+            if i % 2 == 1 and training:
+                a = layer.forward(a)
+                binary_values = (np.random.rand(a.shape[0], a.shape[1]) < (
+                    1 - self._dropout_rate)).astype(int)
+                a *= binary_values
+                a /= (1 - self._dropout_rate)
             else:
                 a = layer.forward(a)
         return a
@@ -392,8 +394,8 @@ class MultiLayerNetwork(object):
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    def __call__(self, x):
-        return self.forward(x)
+    def __call__(self, x, training=True):
+        return self.forward(x, training)
 
     def backward(self, grad_z):
         """
@@ -562,13 +564,16 @@ class Trainer(object):
                 if self.shuffle_flag
                 else (x_train, y_train)
             )
-            number_of_splits = max(np.shape(input_data)[0] / self.batch_size, 1)
+            number_of_splits = max(np.shape(input_data)[
+                                   0] / self.batch_size, 1)
             split_input_dataset = np.array_split(input_data, number_of_splits)
-            split_target_dataset = np.array_split(target_data, number_of_splits)
+            split_target_dataset = np.array_split(
+                target_data, number_of_splits)
 
             for i in range(int(number_of_splits)):
                 predictions = self.network.forward(split_input_dataset[i])
-                error = self._loss_layer.forward(predictions, split_target_dataset[i])
+                error = self._loss_layer.forward(
+                    predictions, split_target_dataset[i])
                 grad_z = self._loss_layer.backward()
                 self.network.backward(grad_z)
                 self.network.update_params(self.learning_rate)
@@ -585,7 +590,8 @@ class Trainer(object):
                 if type(x_dev) != type(None) and type(y_dev) != type(None):
                     # only check for static every 10
                     predictions_dev = self.network.forward(x_dev)
-                    error_dev = self._loss_layer.forward(predictions_dev, y_dev)
+                    error_dev = self._loss_layer.forward(
+                        predictions_dev, y_dev)
                     if type(min_y) != type(None) and type(max_y) != type(None):
                         error_dev = self._loss_layer.forward(
                             predictions_dev * (max_y - min_y) + min_y,
