@@ -2,6 +2,7 @@
 import numpy as np
 import pickle
 from pyrsistent import b
+from torch import dropout
 from part2_house_value_regression import *
 import sys
 
@@ -329,7 +330,7 @@ class MultiLayerNetwork(object):
     activation functions.
     """
 
-    def __init__(self, input_dim, neurons, activations, dropout_rate=0.00):
+    def __init__(self, input_dim, neurons, activations, dropout_rate=None):
         """
         Constructor of the multi layer network.
 
@@ -356,7 +357,7 @@ class MultiLayerNetwork(object):
                 self._layers.append(ReluLayer())
             elif activation.lower() == "sigmoid":
                 self._layers.append(SigmoidLayer())
-            elif activation.lower() == "identiy":
+            else:
                 self._layers.append(LinearActivationLayer())
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -378,13 +379,13 @@ class MultiLayerNetwork(object):
         a = x
         for i, layer in enumerate(self._layers):
             # Implementing dropout
-            if i % 2 == 1:
-                binary_values = (np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)).astype(int)
-                a = layer.forward(a) * binary_values
-                a /= (1 - self._dropout_rate)
+            if self.dropout_rate != None and i % 2 == 1:
+                if i % 2 == 1:
+                    binary_values = (np.random.rand(a.shape[0], a.shape[1]) < (1 - self._dropout_rate)).astype(int)
+                    a = layer.forward(a) * binary_values
+                    a /= (1 - self._dropout_rate)
             else:
                 a = layer.forward(a)
-            # a = layer.forward(a)
         return a
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -723,7 +724,7 @@ def example_main():
 
     neurons = [16, 3]
     # activations = ["sigmoid", "sigmoid"]
-    activations = ["relu", "relu"]
+    activations = ["relu", "identity"]
 
     # neurons = [16, 30, 15, 3]
     # activations = ["relu", "relu", "relu", "relu"]
@@ -769,7 +770,7 @@ def example_main():
         nb_epoch=10000,
         learning_rate=0.01,
         loss_fun="bce",
-        shuffle_flag=False,
+        shuffle_flag=True,
     )
 
     trainer.train(x_train_pre, y_train)
