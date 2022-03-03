@@ -1,7 +1,9 @@
 import random
+
 # from tkinter.tix import Y_REGION
 # from pytest import skip
 import torch
+
 # import inspect
 import pickle
 import numpy as np
@@ -15,10 +17,17 @@ from collections import defaultdict
 
 
 class Regressor(BaseEstimator):
-
-    def __init__(self, x, nb_epoch=200,
-                 neurons=[150, 150, 150, 1],
-                 activations=["relu", "relu", "relu","linear"], batch_size=500, dropout_rate=0.00, learning_rate=0.05, loss_fun="mse"):
+    def __init__(
+        self,
+        x,
+        nb_epoch=200,
+        neurons=[150, 150, 150, 1],
+        activations=["relu", "relu", "relu", "linear"],
+        batch_size=500,
+        dropout_rate=0.00,
+        learning_rate=0.05,
+        loss_fun="mse",
+    ):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -66,21 +75,23 @@ class Regressor(BaseEstimator):
         # SET UP ONE_HOT MAKER
         if training:
             self._lb = LabelBinarizer()
-            self._lb.fit(['<1H OCEAN', 'INLAND', 'NEAR BAY', 'NEAR OCEAN', 'ISLAND'])
+            self._lb.fit(["<1H OCEAN", "INLAND", "NEAR BAY", "NEAR OCEAN", "ISLAND"])
 
         # FIX TEXT ENTRIES AND
         X = x.copy()  # Copy the dataframe
         # Not sure if this is correct default
         X.fillna(random.uniform(0, 1), inplace=True)
-        one_hots = self._lb.transform(
-            X["ocean_proximity"])  # Form one-hot vectors
+        one_hots = self._lb.transform(X["ocean_proximity"])  # Form one-hot vectors
         X = X.drop(labels="ocean_proximity", axis=1)
 
+        if training:
+            self.min_X = X.min(skipna=True)
+            self.max_X = X.max(skipna=True)
+
         # NO-LOOP NORMALISATION METHOD
-        X_norm = (X-X.min(skipna=True))/(X.max(skipna=True)-X.min(skipna=True))
+        X_norm = (X - self.min_X) / (self.max_X - self.min_X)
         X_numpy = X_norm.copy().to_numpy().astype(float)
         X_numpy = np.concatenate((X_numpy, one_hots), axis=1)
-        
 
         Y_numpy = None
         if isinstance(y, pd.DataFrame):
@@ -88,12 +99,11 @@ class Regressor(BaseEstimator):
             if training:
                 self.min_y = np.amin(Y_numpy)
                 self.max_y = np.amax(Y_numpy)
-            Y_numpy = (Y_numpy-self.min_y)/(self.max_y -
-                                            self.min_y)  # DO WE NORMALISE Y?
+            Y_numpy = (Y_numpy - self.min_y) / (self.max_y - self.min_y)
 
         return X_numpy, Y_numpy
 
-    def fit(self, x_train, y_train, x_dev = None, y_dev = None):
+    def fit(self, x_train, y_train, x_dev=None, y_dev=None):
         """
         Regressor training function
 
@@ -107,8 +117,8 @@ class Regressor(BaseEstimator):
 
         """
 
-        X, Y = self._preprocessor(x_train, y=y_train, training=True) 
-        X_dev= None
+        X, Y = self._preprocessor(x_train, y=y_train, training=True)
+        X_dev = None
         Y_dev = None
         if type(x_dev) != type(None) and type(y_dev) != type(None):
             X_dev, Y_dev = self._preprocessor(x_dev, y=y_dev, training=False)
@@ -118,7 +128,7 @@ class Regressor(BaseEstimator):
             nb_epoch=self.nb_epoch,
             learning_rate=self.learning_rate,
             loss_fun=self.loss_fun,
-            shuffle_flag=False
+            shuffle_flag=False,
         )
         trainer.train(X, Y, X_dev, Y_dev)
         return self
@@ -156,13 +166,12 @@ class Regressor(BaseEstimator):
         return np.sqrt(mean_squared_error(y.to_numpy(), predictions))
 
 
-
 def save_regressor(trained_model):
     """
     Utility function to save the trained regressor model in part2_model.pickle.
     """
     # If you alter this, make sure it works in tandem with load_regressor
-    with open('part2_model.pickle', 'wb') as target:
+    with open("part2_model.pickle", "wb") as target:
         pickle.dump(trained_model, target)
     print("\nSaved model in part2_model.pickle\n")
 
@@ -172,7 +181,7 @@ def load_regressor():
     Utility function to load the trained regressor model in part2_model.pickle.
     """
     # If you alter this, make sure it works in tandem with save_regressor
-    with open('part2_model.pickle', 'rb') as target:
+    with open("part2_model.pickle", "rb") as target:
         trained_model = pickle.load(target)
     print("\nLoaded model in part2_model.pickle\n")
     return trained_model
@@ -201,7 +210,7 @@ def RegressorHyperParameterSearch(x_train, y_train, x_test, y_test):
     # nb_epoch = [50, 500, 2500]
     # batch_size = [5, 20, 50]
     # dropout_rate = [0.0, 0.3, 0.4, 0.5]
-    
+
     x = [x_train]
     neurons = [[5, 20, 20, 1]]
     learning_rate = [0.01, 0.1]
@@ -211,11 +220,24 @@ def RegressorHyperParameterSearch(x_train, y_train, x_test, y_test):
 
     regressor = Regressor(x_train)
 
-    grid = dict(x=x, neurons=neurons,
-                nb_epoch=nb_epoch, batch_size=batch_size, dropout_rate=dropout_rate, learning_rate=learning_rate)
+    grid = dict(
+        x=x,
+        neurons=neurons,
+        nb_epoch=nb_epoch,
+        batch_size=batch_size,
+        dropout_rate=dropout_rate,
+        learning_rate=learning_rate,
+    )
 
-    grid_search = GridSearchCV(estimator=regressor, param_grid=grid,
-                               scoring=["neg_mean_squared_error"], refit="neg_mean_squared_error", cv=2, verbose=4, error_score="raise")
+    grid_search = GridSearchCV(
+        estimator=regressor,
+        param_grid=grid,
+        scoring=["neg_mean_squared_error"],
+        refit="neg_mean_squared_error",
+        cv=2,
+        verbose=4,
+        error_score="raise",
+    )
 
     result = grid_search.fit(x_train, y_train)
 
@@ -253,7 +275,7 @@ def example_main():
     # You probably want to separate some held-out data
     # to make sure the model isn't overfitting
     regressor = Regressor(x_train)
-    regressor.fit(x_train, y_train, x_dev,y_dev)
+    regressor.fit(x_train, y_train, x_dev, y_dev)
     save_regressor(regressor)
     # regressor = load_regressor()
 
@@ -262,6 +284,7 @@ def example_main():
     # Error
     error = regressor.score(x_test, y_test)
     print("\nRegressor error: {}\n".format(error))
+
 
 if __name__ == "__main__":
     example_main()
