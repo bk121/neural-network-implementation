@@ -17,8 +17,8 @@ from collections import defaultdict
 class Regressor(BaseEstimator):
 
     def __init__(self, x, nb_epoch=200,
-                 neurons=[150, 150, 150, 150, 150, 150, 150, 1],
-                 activations=["relu", "relu", "relu", "relu", "relu", "relu", "relu", "linear"], batch_size=8000, dropout_rate=0.00, learning_rate=0.08, loss_fun="mse"):
+                 neurons=[150, 150, 150, 1],
+                 activations=["relu", "relu", "relu","linear"], batch_size=500, dropout_rate=0.00, learning_rate=0.05, loss_fun="mse"):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """
@@ -93,7 +93,7 @@ class Regressor(BaseEstimator):
 
         return X_numpy, Y_numpy
 
-    def fit(self, x, y):
+    def fit(self, x_train, y_train, x_dev = None, y_dev = None):
         """
         Regressor training function
 
@@ -107,7 +107,11 @@ class Regressor(BaseEstimator):
 
         """
 
-        X, Y = self._preprocessor(x, y=y, training=True)  # Do not forget
+        X, Y = self._preprocessor(x_train, y=y_train, training=True) 
+        X_dev= None
+        Y_dev = None
+        if type(x_dev) != type(None) and type(y_dev) != type(None):
+            X_dev, Y_dev = self._preprocessor(x_dev, y=y_dev, training=False)
         trainer = nn.Trainer(
             network=self.net,
             batch_size=self.batch_size,
@@ -116,7 +120,7 @@ class Regressor(BaseEstimator):
             loss_fun=self.loss_fun,
             shuffle_flag=False
         )
-        trainer.train(X, Y)
+        trainer.train(X, Y, X_dev, Y_dev)
         return self
 
     def predict(self, x):
@@ -235,26 +239,29 @@ def example_main():
     x = data.loc[:, data.columns != output_label]
     y = data.loc[:, [output_label]]
 
-    split_idx = int(0.8 * len(x))
+    split_idx1 = int(0.6 * len(x))
+    split_idx2 = int(0.8 * len(x))
 
-    x_train = x.iloc[:split_idx]
-    y_train = y.iloc[:split_idx]
-    x_val = x.iloc[split_idx:]
-    y_val = y.iloc[split_idx:]
+    x_train = x.iloc[:split_idx1]
+    y_train = y.iloc[:split_idx1]
+    x_dev = x.iloc[split_idx1:split_idx2]
+    y_dev = y.iloc[split_idx1:split_idx2]
+    x_test = x.iloc[split_idx2:]
+    y_test = y.iloc[split_idx2:]
 
     # Training
     # This example trains on the whole available dataset.
     # You probably want to separate some held-out data
     # to make sure the model isn't overfitting
     regressor = Regressor(x_train)
-    regressor.fit(x_train, y_train)
+    regressor.fit(x_train, y_train, x_dev,y_dev)
     save_regressor(regressor)
     # regressor = load_regressor()
 
     # print(RegressorHyperParameterSearch(x_train, y_train, x_val, y_val))
 
     # Error
-    error = regressor.score(x_val, y_val)
+    error = regressor.score(x_test, y_test)
     print("\nRegressor error: {}\n".format(error))
 
 if __name__ == "__main__":

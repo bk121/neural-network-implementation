@@ -459,7 +459,7 @@ class Trainer(object):
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    def train(self, input_dataset, target_dataset):
+    def train(self, x_train, y_train, x_dev=None, y_dev=None):
         """
         Main training loop. Performs the following steps `nb_epoch` times:
             - Shuffles the input data (if `shuffle` is True)
@@ -482,9 +482,10 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+        last_error_dev = 1e100
         for epoch in range(self.nb_epoch):
             input_data, target_data = self.shuffle(
-                input_dataset, target_dataset) if self.shuffle_flag else (input_dataset, target_dataset)
+                x_train, y_train) if self.shuffle_flag else (x_train, y_train)
             number_of_splits = max(np.shape(input_data)[0] / self.batch_size, 1)
             split_input_dataset = np.array_split(input_data, number_of_splits)
             split_target_dataset = np.array_split(
@@ -501,6 +502,14 @@ class Trainer(object):
 
             if(epoch % 10 == 0):
                 print("Epoch: ", epoch, "Error: ", error)
+                if type(x_dev) != type(None) and type(y_dev) != type(None):
+                    # only check for static every 10
+                    predictions_dev = self.network.forward(x_dev)
+                    error_dev = self._loss_layer.forward(
+                        predictions_dev, y_dev)
+                    if error_dev > last_error_dev:
+                        break
+                    last_error_dev = error_dev
 
         #######################################################################
         #                       ** END OF YOUR CODE **
