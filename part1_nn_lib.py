@@ -23,6 +23,7 @@ def xavier_init(size, gain=1.0):
 
     return np.random.uniform(low=low, high=high, size=size)
 
+
 class Layer:
     """
     Abstract layer class.
@@ -121,7 +122,7 @@ class SigmoidLayer(Layer):
         Returns:
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
-        self._cache_current = 1/(1+np.exp(-x))
+        self._cache_current = 1 / (1 + np.exp(-x))
         return self._cache_current
 
     def backward(self, grad_z):
@@ -138,7 +139,7 @@ class SigmoidLayer(Layer):
             {np.ndarray} -- Array containing gradient with repect to layer
                 input, of shape (batch_size, n_in).
         """
-        return grad_z * self._cache_current*(1-self._cache_current)
+        return grad_z * self._cache_current * (1 - self._cache_current)
 
 
 class ReluLayer(Layer):
@@ -250,7 +251,7 @@ class LinearLayer(Layer):
             {np.ndarray} -- Output array of shape (batch_size, n_out)
         """
         self._cache_current = x
-        return ((x @ self._W) + self._b)
+        return (x @ self._W) + self._b
 
     def backward(self, grad_z):
         """
@@ -259,17 +260,17 @@ class LinearLayer(Layer):
         computes gradients of loss with respect to parameters of layer and
         inputs of layer).
 
-        Arguments: 
+        Arguments:
             grad_z {np.ndarray} -- Gradient array of shape (batch_size, n_out).
 
         Returns:
             {np.ndarray} -- Array containing gradient with repect to layer
                 input, of shape (batch_size, n_in).
         """
-        self._grad_W_current = self._cache_current.T@grad_z
-        self._grad_b_current = np.ones((len(grad_z), 1)).T@grad_z
+        self._grad_W_current = self._cache_current.T @ grad_z
+        self._grad_b_current = np.ones((len(grad_z), 1)).T @ grad_z
 
-        return grad_z@self._W.T
+        return grad_z @ self._W.T
 
     def update_params(self, learning_rate):
         """
@@ -279,8 +280,8 @@ class LinearLayer(Layer):
         Arguments:
             learning_rate {float} -- Learning rate of update step.
         """
-        self._W = np.clip(self._W - learning_rate*self._grad_W_current, -1000, 1000)
-        self._b = np.clip(self._b - learning_rate*self._grad_b_current, -1000, 1000)
+        self._W = np.clip(self._W - learning_rate * self._grad_W_current, -1000, 1000)
+        self._b = np.clip(self._b - learning_rate * self._grad_b_current, -1000, 1000)
 
 
 class MultiLayerNetwork(object):
@@ -425,7 +426,9 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._loss_layer = MSELossLayer() if self.loss_fun == 'mse' else CrossEntropyLossLayer()
+        self._loss_layer = (
+            MSELossLayer() if self.loss_fun == "mse" else CrossEntropyLossLayer()
+        )
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -448,8 +451,9 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        shuffled_indices = np.random.default_rng(
-        ).permutation(np.shape(input_dataset)[0])
+        shuffled_indices = np.random.default_rng().permutation(
+            np.shape(input_dataset)[0]
+        )
         shuffled_inputs = input_dataset[shuffled_indices]
         shuffled_targets = target_dataset[shuffled_indices]
 
@@ -484,31 +488,31 @@ class Trainer(object):
         #######################################################################
         last_error_dev = 1e100
         for epoch in range(self.nb_epoch):
-            input_data, target_data = self.shuffle(
-                x_train, y_train) if self.shuffle_flag else (x_train, y_train)
+            input_data, target_data = (
+                self.shuffle(x_train, y_train)
+                if self.shuffle_flag
+                else (x_train, y_train)
+            )
             number_of_splits = max(np.shape(input_data)[0] / self.batch_size, 1)
             split_input_dataset = np.array_split(input_data, number_of_splits)
-            split_target_dataset = np.array_split(
-                target_data, number_of_splits)
+            split_target_dataset = np.array_split(target_data, number_of_splits)
 
             for i in range(int(number_of_splits)):
                 predictions = self.network.forward(split_input_dataset[i])
-                error = self._loss_layer.forward(
-                    predictions, split_target_dataset[i])
+                error = self._loss_layer.forward(predictions, split_target_dataset[i])
 
                 grad_z = self._loss_layer.backward()
                 self.network.backward(grad_z)
                 self.network.update_params(self.learning_rate)
 
-            if(epoch % 10 == 0):
-                print("Epoch: ", epoch, "Error: ", error)
+            if epoch % 10 == 0:
+                print("Epoch: ", epoch, "Normalised MSE Loss: ", error)
                 if type(x_dev) != type(None) and type(y_dev) != type(None):
                     # only check for static every 10
                     predictions_dev = self.network.forward(x_dev)
-                    error_dev = self._loss_layer.forward(
-                        predictions_dev, y_dev)
+                    error_dev = self._loss_layer.forward(predictions_dev, y_dev)
                     if error_dev > last_error_dev:
-                        print("Error stabilised in development set.\nStopping...")
+                        print("\nError stabilised in development set.\nStopping...")
                         break
                     last_error_dev = error_dev
 
@@ -583,8 +587,9 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        normalised_data = self._lower_range + ((data - self._X_min) * (
-            self._upper_range - self._lower_range)) / (self._X_max - self._X_min)
+        normalised_data = self._lower_range + (
+            (data - self._X_min) * (self._upper_range - self._lower_range)
+        ) / (self._X_max - self._X_min)
 
         return normalised_data
 
@@ -605,8 +610,9 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        reverted_data = (data * (self._X_max - self._X_min) -
-                         self._lower_range) / (self._upper_range - self._lower_range) + self._X_min
+        reverted_data = (data * (self._X_max - self._X_min) - self._lower_range) / (
+            self._upper_range - self._lower_range
+        ) + self._X_min
 
         return reverted_data
 
