@@ -24,7 +24,7 @@ class Regressor(BaseEstimator):
         neurons=[150, 150, 150, 1],
         activations=["relu", "relu", "relu", "identity"],
         batch_size=500,
-        dropout_rate=0.00,
+        dropout_rate=0.5,
         learning_rate=0.05,
         loss_fun="mse",
     ):
@@ -172,7 +172,7 @@ class Regressor(BaseEstimator):
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    def score(self, x, y, training=True):
+    def score(self, x, y):
         """
         Function to evaluate the model accuracy on a validation dataset.
 
@@ -188,8 +188,8 @@ class Regressor(BaseEstimator):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        _, Y = self._preprocessor(x, y=y, training=training)  # Do not forget
-        predictions = self.predict(x, training=training)
+        _, Y = self._preprocessor(x, y=y, training=False)  # Do not forget
+        predictions = self.predict(x)
         return np.sqrt(mean_squared_error(y.to_numpy(), predictions))
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -234,19 +234,21 @@ def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test
     #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
-    # x = [x_train]
-    # neurons = [[5, 20, 20], [5, 10, 20], [10, 50, 50]]
-    # learning_rate = [0.001, 0.01, 0.1]
-    # nb_epoch = [50, 500, 2500]
-    # batch_size = [5, 20, 50]
-    # dropout_rate = [0.0, 0.3, 0.4, 0.5]
+    fit_parameters = {"x_dev": x_dev, "y_dev": y_dev}
 
     x = [x_train]
-    neurons = [[5, 20, 20, 1]]
-    learning_rate = [0.01, 0.1]
-    nb_epoch = [5, 25, 100]
-    batch_size = [5]
-    dropout_rate = [0.0]
+    neurons = [[5, 20, 20, 1], [50, 50, 50, 1], [150, 150, 150, 1]]
+    learning_rate = [0.2]
+    nb_epoch = [10, 50, 200, 500]
+    batch_size = [50, 100, 250, 500]
+    dropout_rate = [0.0, 0.3, 0.4, 0.5]
+
+    # x = [x_train]
+    # neurons = [[5, 20, 20, 1]]
+    # learning_rate = [0.01, 0.1]
+    # nb_epoch = [5, 25, 100]
+    # batch_size = [5]
+    # dropout_rate = [0.0]
 
     regressor = Regressor(x_train)
 
@@ -268,7 +270,7 @@ def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test
         error_score="raise",
     )
 
-    result = grid_search.fit(x_train, y_train)
+    result = grid_search.fit(x_train, y_train, fit_params=fit_parameters)
 
     return result.best_params_
     #######################################################################
@@ -301,11 +303,14 @@ def example_main():
     regressor.fit(x_train, y_train, x_dev, y_dev)
     save_regressor(regressor)
 
+    # Get best params
+    # print(RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test))
+
     # Loading
     regressor = load_regressor()
 
     # Error
-    error = regressor.score(x_test, y_test, training=False)
+    error = regressor.score(x_test, y_test)
     print("\nRegressor error: {}\n".format(error))
 
 
