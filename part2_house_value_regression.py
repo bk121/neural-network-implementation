@@ -143,8 +143,9 @@ class Regressor(BaseEstimator):
             learning_rate=self.learning_rate,
             loss_fun=self.loss_fun,
             shuffle_flag=False,
+            generate_plot_data=True,
         )
-        trainer.train(X, Y, X_dev, Y_dev)
+        trainer.train(X, Y, X_dev, Y_dev, self.min_y, self.max_y)
         return self
         #######################################################################
         #                       ** END OF YOUR CODE **
