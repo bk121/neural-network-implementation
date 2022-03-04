@@ -21,11 +21,11 @@ class Regressor(BaseEstimator):
         self,
         x,
         nb_epoch=500,
-        neurons=[150, 150, 150, 1],
+        neurons=[50, 50, 50, 1],
         activations=["relu", "relu", "relu", "identity"],
-        batch_size=500,
-        dropout_rate=0.5,
-        learning_rate=0.05,
+        batch_size=100,
+        dropout_rate=0.4,
+        learning_rate=0.2,
         loss_fun="mse",
     ):
         # You can add any input parameters you need
@@ -236,19 +236,21 @@ def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test
     #######################################################################
     fit_parameters = {"x_dev": x_dev, "y_dev": y_dev}
 
-    x = [x_train]
-    neurons = [[5, 20, 20, 1], [50, 50, 50, 1], [150, 150, 150, 1]]
-    learning_rate = [0.2]
-    nb_epoch = [10, 50, 200, 500]
-    batch_size = [50, 100, 250, 500]
-    dropout_rate = [0.0, 0.3, 0.4, 0.5]
-
+    # Hyperparameters used to tune base estimator
     # x = [x_train]
-    # neurons = [[5, 20, 20, 1]]
-    # learning_rate = [0.01, 0.1]
-    # nb_epoch = [5, 25, 100]
-    # batch_size = [5]
-    # dropout_rate = [0.0]
+    # neurons = [[5, 20, 20, 1], [50, 50, 50, 1], [150, 150, 150, 1]]
+    # batch_size = [50, 100, 250, 500]
+    # dropout_rate = [0.0, 0.3, 0.4, 0.5]
+    # nb_epoch = [10, 50, 200, 500]
+    # learning_rate = [0.2]
+
+    # Base estimator - vary hyperparameters one at the time
+    x = [x_train]
+    neurons = [[50, 50, 50, 1]]
+    learning_rate = [0.2]
+    nb_epoch = [500]
+    batch_size = [100]
+    dropout_rate = [0.4]
 
     regressor = Regressor(x_train)
 
@@ -270,7 +272,7 @@ def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test
         error_score="raise",
     )
 
-    result = grid_search.fit(x_train, y_train, fit_params=fit_parameters)
+    result = grid_search.fit(x_train, y_train, **fit_parameters)
 
     return result.best_params_
     #######################################################################

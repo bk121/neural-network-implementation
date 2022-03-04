@@ -469,8 +469,8 @@ class Trainer(object):
         loss_fun,
         shuffle_flag,
         generate_plot_data=False,
-        learning_decay_rate=0.5,
-        epochs_per_decay=50
+        learning_decay_rate=0.9,
+        epochs_per_decay=10
     ):
         """
         Constructor of the Trainer.
