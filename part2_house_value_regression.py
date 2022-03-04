@@ -21,8 +21,6 @@ class Regressor(BaseEstimator):
         learning_rate=0.2,
         loss_fun="mse",
     ):
-        # You can add any input parameters you need
-        # Remember to set them with a default value for LabTS tests
         """
         Initialise the model.
 
@@ -31,6 +29,14 @@ class Regressor(BaseEstimator):
                 (batch_size, input_size), used to compute the size
                 of the network.
             - nb_epoch {int} -- number of epoch to train the network.
+            - neurons {list} -- number of neurons per layer
+            - activations {list} -- activation functions to use at each layer
+            - batch_size {int} -- size of batches in training
+            - dropout_rate {float} -- fraction of neurons to dropout per epoch
+                                      in training
+            - learning_rate {float} -- initial leanring rate in training
+            - loss_fun {string} -- functions for the calculation of loss in 
+                                   training
 
         """
         #######################################################################
@@ -73,13 +79,13 @@ class Regressor(BaseEstimator):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # SET UP ONE_HOT MAKER
+        # set up one hot maker
         if training:
             self._lb = LabelBinarizer()
             self._lb.fit(
                 ["<1H OCEAN", "INLAND", "NEAR BAY", "NEAR OCEAN", "ISLAND"])
 
-        # FIX TEXT ENTRIES AND
+        # fix text entries
         X = x.copy()  # Copy the dataframe
         X.fillna(random.uniform(0, 1), inplace=True)
         one_hots = self._lb.transform(
@@ -90,11 +96,12 @@ class Regressor(BaseEstimator):
             self.min_X = X.min(skipna=True)
             self.max_X = X.max(skipna=True)
 
-        # NO-LOOP NORMALISATION METHOD
+        # x normalisation
         X_norm = (X - self.min_X) / (self.max_X - self.min_X)
         X_numpy = X_norm.copy().to_numpy().astype(float)
         X_numpy = np.concatenate((X_numpy, one_hots), axis=1)
 
+        # y normalisation
         Y_numpy = None
         if isinstance(y, pd.DataFrame):
             Y_numpy = y.copy().to_numpy().astype(float)
@@ -113,9 +120,14 @@ class Regressor(BaseEstimator):
         Regressor training function
 
         Arguments:
-            - x {pd.DataFrame} -- Raw input array of shape
+            - x_train {pd.DataFrame} -- Raw input array of shape
                 (batch_size, input_size).
-            - y {pd.DataFrame} -- Raw output array of shape (batch_size, 1).
+            - y_train {pd.DataFrame} -- Raw output array of shape 
+                                        (batch_size, 1).
+            - x_dev {pd.DataFrame} -- Raw development array of shape
+                (batch_size, input_size).
+            - y_dev {pd.DataFrame} -- Raw development array of shape 
+                                      (batch_size, 1).
 
         Returns:
             self {Regressor} -- Trained model.
@@ -217,16 +229,20 @@ def RegressorHyperParameterSearch(x, y):
     in the Regressor class.
 
     Arguments:
-        Add whatever inputs you need.
+        - x {pd.DataFrame} -- Raw input array of shape
+                (batch_size, input_size).
+        - y {pd.DataFrame} -- Raw ouput array of shape (batch_size, 1).
 
     Returns:
-        The function should return your optimised hyper-parameters.
+        {Regressor} -- Trained model with optimal parameters.
 
     """
 
     #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
+
+    # params to investigate
     x_in = [x]
     learning_rate = [0.2]
     neurons = [[5, 20, 20, 1],
@@ -235,8 +251,10 @@ def RegressorHyperParameterSearch(x, y):
     nb_epoch = [10, 50, 200, 500]
     dropout_rate = [0.0, 0.3, 0.4, 0.5]
 
+    # model to test
     regressor = Regressor(x)
 
+    # establish search grid
     grid = dict(
         x=x_in,
         neurons=neurons,
@@ -256,7 +274,7 @@ def RegressorHyperParameterSearch(x, y):
     )
 
     result = grid_search.fit(x, y)
-    with open("result1.pickle", "wb") as target:
+    with open("result.pickle", "wb") as target:
         pickle.dump(result, target)
 
     return result.best_estimator_
@@ -284,7 +302,7 @@ def example_main():
     y_dev = y.iloc[split_idx1:split_idx2]
     x_test = x.iloc[split_idx2:]
     y_test = y.iloc[split_idx2:]
-    
+
     # Get best regressor
     regressor = RegressorHyperParameterSearch(x, y)
     save_regressor(regressor)
