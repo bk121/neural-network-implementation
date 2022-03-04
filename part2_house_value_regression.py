@@ -237,7 +237,6 @@ def RegressorHyperParameterSearch(x, y):
     #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
-
     x_in = [x]
     neurons = [[60, 100, 20, 1],
                [50, 400, 50, 1], [100, 200, 30, 1],
@@ -273,7 +272,7 @@ def RegressorHyperParameterSearch(x, y):
     with open("result1.pickle", "wb") as target:
         pickle.dump(result, target)
 
-    return result.cv_results_
+    return result.best_params_
     #######################################################################
     #                       ** END OF YOUR CODE **
     #######################################################################
