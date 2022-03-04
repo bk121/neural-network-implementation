@@ -1,10 +1,6 @@
-# from matplotlib.pyplot import step
 import numpy as np
 import pickle
-from pyrsistent import b
-from torch import dropout
 from part2_house_value_regression import *
-import sys
 
 
 def xavier_init(size, gain=1.0):
@@ -183,10 +179,6 @@ class ReluLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._cache_current = x.clip(min=0)
-
-        # Leaky ReLU implementation -- 0.01 is an arbitrary "very"
-        # self._cache_current = np.where(x > 0, x, x * 0.00)
-
         return self._cache_current
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -210,7 +202,6 @@ class ReluLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         result = self._cache_current[self._cache_current > 0] = 1
-
         return grad_z * result
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -249,7 +240,6 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._W = xavier_init((n_in, n_out), gain=1)
-        # self._W = he_init((n_in, n_out))
         self._b = np.zeros((1, n_out))
 
         self._cache_current = None
@@ -469,8 +459,8 @@ class Trainer(object):
         loss_fun,
         shuffle_flag,
         generate_plot_data=False,
-        learning_decay_rate=0.5,
-        epochs_per_decay=100
+        learning_decay_rate=0.9,
+        epochs_per_decay=10
     ):
         """
         Constructor of the Trainer.
@@ -662,7 +652,6 @@ class Trainer(object):
         #######################################################################
         predictions = self.network.forward(input_dataset)
         return self._loss_layer.forward(predictions, target_dataset)
-
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -686,13 +675,11 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-
         # Scale smallest value to a and largest value to b: for example [a,b] = [0,1]
         self._lower_range = 0
         self._upper_range = 1
         self._X_min = np.amin(data, axis=0)
         self._X_max = np.amax(data, axis=0)
-
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -715,7 +702,6 @@ class Preprocessor(object):
         ) / (self._X_max - self._X_min)
 
         return normalised_data
-
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -738,7 +724,6 @@ class Preprocessor(object):
         ) + self._X_min
 
         return reverted_data
-
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -747,13 +732,8 @@ class Preprocessor(object):
 def example_main():
     input_dim = 4
 
-    neurons = [16, 3]
-    # activations = ["sigmoid", "sigmoid"]
-    activations = ["identity", "identity"]
-
-    # neurons = [16, 30, 15, 3]
-    # activations = ["relu", "relu", "relu", "relu"]
-    # activations = ["sigmoid", "sigmoid", "sigmoid", "sigmoid"]
+    neurons = [16, 30, 15, 3]
+    activations = ["relu", "relu", "relu", "relu"]
 
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
@@ -775,25 +755,11 @@ def example_main():
     x_train_pre = prep_input.apply(x_train)
     x_val_pre = prep_input.apply(x_val)
 
-    # print(x_train)
-    # print(x_train_pre)
-    # print(prep_input.revert(x_train_pre) - x_train)
-
-    # predictions = net.forward(x_train_pre)
-    # cll = CrossEntropyLossLayer()
-    # cll.forward(predictions, y_train)
-    # grad_z = cll.backward()
-    # error = net.backward(grad_z)
-    # net.update_params(0.1)
-    # print("predictions", predictions)
-    # print("gradz", grad_z)
-    # print("error", error)
-
     trainer = Trainer(
         network=net,
-        batch_size=8,
-        nb_epoch=10000,
-        learning_rate=0.01,
+        batch_size=8000,
+        nb_epoch=1000,
+        learning_rate=0.2,
         loss_fun="bce",
         shuffle_flag=True,
     )

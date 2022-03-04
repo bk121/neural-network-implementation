@@ -1,11 +1,4 @@
 import random
-from turtle import ycor
-
-# from tkinter.tix import Y_REGION
-# from pytest import skip
-import torch
-
-# import inspect
 import pickle
 import numpy as np
 import pandas as pd
@@ -14,19 +7,18 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from sklearn.base import BaseEstimator
-from collections import defaultdict
 
 
 class Regressor(BaseEstimator):
     def __init__(
         self,
         x,
-        nb_epoch=500,
-        neurons=[50, 400, 50, 1],
+        nb_epoch=30000,
+        neurons=[50, 50, 50, 1],
         activations=["relu", "relu",  "relu", "identity"],
         batch_size=100,
-        dropout_rate=0.5,
-        learning_rate=0.1,
+        dropout_rate=0.4,
+        learning_rate=0.2,
         loss_fun="mse",
     ):
         # You can add any input parameters you need
@@ -44,7 +36,6 @@ class Regressor(BaseEstimator):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # NOT VERY SMOOTH, ACCOUNT FOR ONE_HOTS
         self.input_size = x.shape[1] + 4
         self.output_size = 1
         self.x = x
@@ -90,7 +81,6 @@ class Regressor(BaseEstimator):
 
         # FIX TEXT ENTRIES AND
         X = x.copy()  # Copy the dataframe
-        # Not sure if this is correct default
         X.fillna(random.uniform(0, 1), inplace=True)
         one_hots = self._lb.transform(
             X["ocean_proximity"])  # Form one-hot vectors
@@ -238,15 +228,12 @@ def RegressorHyperParameterSearch(x, y):
     #                       ** START OF YOUR CODE **
     #######################################################################
     x_in = [x]
-    neurons = [[60, 100, 20, 1],
-               [50, 400, 50, 1], [100, 200, 30, 1],
-               [200, 400, 30, 1], [100, 100, 20, 1],
-               [25, 90, 20, 1], [60, 200, 3, 1],
-               [500, 500, 30, 1]]
-    learning_rate = [0.1]
-    nb_epoch = [500]
-    batch_size = [50, 100,  200]
-    dropout_rate = [0.5]
+    learning_rate = [0.2]
+    neurons = [[5, 20, 20, 1],
+               [50, 50, 50, 1], [150, 150, 150, 1]]
+    batch_size = [50, 100, 250, 500]
+    nb_epoch = [10, 50, 200, 500]
+    dropout_rate = [0.0, 0.3, 0.4, 0.5]
 
     regressor = Regressor(x)
 
@@ -272,7 +259,7 @@ def RegressorHyperParameterSearch(x, y):
     with open("result1.pickle", "wb") as target:
         pickle.dump(result, target)
 
-    return result.best_params_
+    return result.best_estimator_
     #######################################################################
     #                       ** END OF YOUR CODE **
     #######################################################################
@@ -297,19 +284,11 @@ def example_main():
     y_dev = y.iloc[split_idx1:split_idx2]
     x_test = x.iloc[split_idx2:]
     y_test = y.iloc[split_idx2:]
-
-    # Training
-    regressor = Regressor(x_train)
-    regressor.fit(x_train, y_train, x_dev, y_dev)
+    
+    # Get best regressor
+    regressor = RegressorHyperParameterSearch(x, y)
     save_regressor(regressor)
 
-    # # Get best params
-    # print(RegressorHyperParameterSearch(x, y))
-
-    # with open("result1.pickle", "rb") as target:
-    #     result = pickle.load(target)
-
-    # print(result.best_params_)
     # Loading
     regressor = load_regressor()
 
