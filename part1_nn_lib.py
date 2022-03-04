@@ -334,6 +334,7 @@ class MultiLayerNetwork(object):
                 number of linear layers.
             - activations {list} -- List of the activation functions to apply
                 to the output of each linear layer.
+            - dropout_rate {float} -- fraction of neurons to drop per epcoh.
         """
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -361,6 +362,7 @@ class MultiLayerNetwork(object):
 
         Arguments:
             x {np.ndarray} -- Input array of shape (batch_size, input_dim).
+            training (bool) -- True if model is in training.
 
         Returns:
             {np.ndarray} -- Output ar0.54643265yer)
@@ -474,6 +476,11 @@ class Trainer(object):
                 bce.
             - shuffle_flag {bool} -- If True, training data is shuffled before
                 training.
+            - generate_plot_data {bool} -- If True, plot data will be saved in 
+                                           directory.
+            - learning_decay_rate {float} -- decay rate of leanrning rate.
+            - epoc_per_decay {int} -- number of epochs per learning rate step 
+                                      down.
         """
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -540,10 +547,16 @@ class Trainer(object):
                 parameters.
 
         Arguments:
-            - input_dataset {np.ndarray} -- Array of input features, of shape
+            - x_train {np.ndarray} -- Array of input features, of shape
                 (#_training_data_points, n_features).
-            - target_dataset {np.ndarray} -- Array of corresponding targets, of
+            - y_train {np.ndarray} -- Array of corresponding targets, of
                 shape (#_training_data_points, #output_neurons).
+            - x_dev {pd.DataFrame} -- Raw development array of shape
+                (batch_size, input_size).
+            - y_dev {pd.DataFrame} -- Raw development array of shape 
+                                      (batch_size, 1).
+            - min_x {float} -- minimum value of y in training data (for plotting)
+            - min_y {float} -- minimum value of x in training data (for plotting)
         """
         #######################################################################
         #                       ** START OF YOUR CODE **
