@@ -15,7 +15,7 @@ with open("dev_error.pickle", "rb") as target:
 
 plt.plot(epochs, train_error, label="Training Data")
 plt.plot(epochs, dev_error, label="Validation Data")
-plt.title("Model Error Over Time")
+plt.title("Model Error Over Time\nWith Dropout=0.5")
 plt.xlabel("Epoch")
 plt.ylabel("Root Mean Square Error")
 plt.xlim(epochs[0], epochs[-1])

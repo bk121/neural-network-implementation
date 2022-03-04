@@ -1,4 +1,5 @@
 import random
+from turtle import ycor
 
 # from tkinter.tix import Y_REGION
 # from pytest import skip
@@ -20,12 +21,12 @@ class Regressor(BaseEstimator):
     def __init__(
         self,
         x,
-        nb_epoch=500,
-        neurons=[150, 150, 150, 1],
-        activations=["relu", "relu", "relu", "identity"],
-        batch_size=500,
+        nb_epoch=200,
+        neurons=[50, 400, 50, 1],
+        activations=["relu", "relu",  "relu", "identity"],
+        batch_size=100,
         dropout_rate=0.5,
-        learning_rate=0.05,
+        learning_rate=0.1,
         loss_fun="mse",
     ):
         # You can add any input parameters you need
@@ -84,13 +85,15 @@ class Regressor(BaseEstimator):
         # SET UP ONE_HOT MAKER
         if training:
             self._lb = LabelBinarizer()
-            self._lb.fit(["<1H OCEAN", "INLAND", "NEAR BAY", "NEAR OCEAN", "ISLAND"])
+            self._lb.fit(
+                ["<1H OCEAN", "INLAND", "NEAR BAY", "NEAR OCEAN", "ISLAND"])
 
         # FIX TEXT ENTRIES AND
         X = x.copy()  # Copy the dataframe
         # Not sure if this is correct default
         X.fillna(random.uniform(0, 1), inplace=True)
-        one_hots = self._lb.transform(X["ocean_proximity"])  # Form one-hot vectors
+        one_hots = self._lb.transform(
+            X["ocean_proximity"])  # Form one-hot vectors
         X = X.drop(labels="ocean_proximity", axis=1)
 
         if training:
@@ -217,7 +220,7 @@ def load_regressor():
     return trained_model
 
 
-def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test):
+def RegressorHyperParameterSearch(x, y):
     # Ensure to add whatever inputs you deem necessary to this function
     """
     Performs a hyper-parameter for fine-tuning the regressor implemented
@@ -234,26 +237,22 @@ def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test
     #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
-    fit_parameters = {"x_dev": x_dev, "y_dev": y_dev}
 
-    x = [x_train]
-    neurons = [[5, 20, 20, 1], [50, 50, 50, 1], [150, 150, 150, 1]]
-    learning_rate = [0.2]
-    nb_epoch = [10, 50, 200, 500]
-    batch_size = [50, 100, 250, 500]
-    dropout_rate = [0.0, 0.3, 0.4, 0.5]
+    x_in = [x]
+    neurons = [[60, 100, 20, 1],
+               [50, 400, 50, 1], [100, 200, 30, 1],
+               [200, 400, 30, 1], [100, 100, 20, 1],
+               [25, 90, 20, 1], [60, 200, 3, 1],
+               [500, 500, 30, 1]]
+    learning_rate = [0.1]
+    nb_epoch = [500]
+    batch_size = [50, 100,  200]
+    dropout_rate = [0.5]
 
-    # x = [x_train]
-    # neurons = [[5, 20, 20, 1]]
-    # learning_rate = [0.01, 0.1]
-    # nb_epoch = [5, 25, 100]
-    # batch_size = [5]
-    # dropout_rate = [0.0]
-
-    regressor = Regressor(x_train)
+    regressor = Regressor(x)
 
     grid = dict(
-        x=x,
+        x=x_in,
         neurons=neurons,
         nb_epoch=nb_epoch,
         batch_size=batch_size,
@@ -265,14 +264,16 @@ def RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test
         estimator=regressor,
         param_grid=grid,
         scoring=["neg_mean_squared_error"],
-        refit="neg_mean_squared_error",
         verbose=4,
         error_score="raise",
+        refit="neg_mean_squared_error"
     )
 
-    result = grid_search.fit(x_train, y_train, fit_params=fit_parameters)
+    result = grid_search.fit(x, y)
+    with open("result1.pickle", "wb") as target:
+        pickle.dump(result, target)
 
-    return result.best_params_
+    return result.cv_results_
     #######################################################################
     #                       ** END OF YOUR CODE **
     #######################################################################
@@ -303,14 +304,18 @@ def example_main():
     regressor.fit(x_train, y_train, x_dev, y_dev)
     save_regressor(regressor)
 
-    # Get best params
-    # print(RegressorHyperParameterSearch(x_train, y_train, x_dev, y_dev, x_test, y_test))
+    # # Get best params
+    # print(RegressorHyperParameterSearch(x, y))
 
+    # with open("result1.pickle", "rb") as target:
+    #     result = pickle.load(target)
+
+    # print(result.best_params_)
     # Loading
     regressor = load_regressor()
 
     # Error
-    error = regressor.score(x_test, y_test)
+    error = regressor.score(x, y)
     print("\nRegressor error: {}\n".format(error))
 
 

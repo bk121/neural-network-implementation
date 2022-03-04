@@ -470,7 +470,7 @@ class Trainer(object):
         shuffle_flag,
         generate_plot_data=False,
         learning_decay_rate=0.5,
-        epochs_per_decay=50
+        epochs_per_decay=100
     ):
         """
         Constructor of the Trainer.
@@ -495,8 +495,8 @@ class Trainer(object):
         self.loss_fun = loss_fun
         self.shuffle_flag = shuffle_flag
         self.generate_plot_data = generate_plot_data
-        self.learning_decay_rate=learning_decay_rate
-        self.epochs_per_decay=epochs_per_decay
+        self.learning_decay_rate = learning_decay_rate
+        self.epochs_per_decay = epochs_per_decay
 
         self._loss_layer = (
             MSELossLayer() if self.loss_fun == "mse" else CrossEntropyLossLayer()
@@ -562,9 +562,10 @@ class Trainer(object):
         train_error = np.array([])
         dev_error = np.array([])
         epochs = np.array([])
+        counter = 0
         for epoch in range(self.nb_epoch):
-            if epoch%self.epochs_per_decay==0 and epoch!=0:
-                self.learning_rate*=self.learning_decay_rate
+            if epoch % self.epochs_per_decay == 0 and epoch != 0:
+                self.learning_rate *= self.learning_decay_rate
                 print("\nEpoch:", epoch)
                 print("\nNew learning rate:", self.learning_rate)
             input_data, target_data = (
@@ -572,17 +573,19 @@ class Trainer(object):
                 if self.shuffle_flag
                 else (x_train, y_train)
             )
-            number_of_splits = max(np.shape(input_data)[0] / self.batch_size, 1)
+            number_of_splits = max(np.shape(input_data)[
+                                   0] / self.batch_size, 1)
             split_input_dataset = np.array_split(input_data, number_of_splits)
-            split_target_dataset = np.array_split(target_data, number_of_splits)
+            split_target_dataset = np.array_split(
+                target_data, number_of_splits)
 
             for i in range(int(number_of_splits)):
                 predictions = self.network.forward(split_input_dataset[i])
-                error = self._loss_layer.forward(predictions, split_target_dataset[i])
+                error = self._loss_layer.forward(
+                    predictions, split_target_dataset[i])
                 grad_z = self._loss_layer.backward()
                 self.network.backward(grad_z)
                 self.network.update_params(self.learning_rate)
-            
 
             if epoch % 10 == 0:
                 print("Epoch: ", epoch, "Normalised MSE Train Loss: ", error)
@@ -596,16 +599,35 @@ class Trainer(object):
                 if type(x_dev) != type(None) and type(y_dev) != type(None):
                     # only check for static every 10
                     predictions_dev = self.network.forward(x_dev)
-                    error_dev = self._loss_layer.forward(predictions_dev, y_dev)
-                    print("Epoch: ", epoch, "Normalised MSE Development Loss: ", error_dev)
+                    error_dev = self._loss_layer.forward(
+                        predictions_dev, y_dev)
+                    print("Epoch: ", epoch,
+                          "Normalised MSE Development Loss: ", error_dev)
                     if type(min_y) != type(None) and type(max_y) != type(None):
                         error_dev = self._loss_layer.forward(
                             predictions_dev * (max_y - min_y) + min_y,
                             y_dev * (max_y - min_y) + min_y,
                         )
                     dev_error = np.append(dev_error, np.sqrt(error_dev))
-                        
+                    if error_dev > last_error_dev:
+                        counter += 1
+                        if counter > 5:
+                            print(
+                                "\nError stabilised in development set.\nStopping...")
+                            break
+                            if self.generate_plot_data:
+                                self.save_plot_data(
+                                    epochs, train_error, dev_error)
+                            return
+                    else:
+                        counter = 0
                     last_error_dev = error_dev
+        if self.generate_plot_data:
+            if type(x_dev) != type(None) and type(y_dev) != type(None):
+                self.save_plot_data(epochs, train_error, dev_error)
+            else:
+                self.save_plot_data(epochs, train_error)
+
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
